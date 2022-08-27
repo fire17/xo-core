@@ -366,10 +366,25 @@ class Expando(compareable):
 		# print("ITTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 		return self.kids()
 
+	def __str__(self):
+		# print(f"!!!!!!! {self._name}")
+		if self._val is not None:
+			if "formula" in self and True:  # TODO: check valid formula
+				# print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
+				return str(self._runFormula())
+			return str(self._val)
+		# [:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
+		return "{xobject "+str({str(self._id.replace("/", ".")): self._val}
+                         )[1:-1]+f" ::: children({len(self.children())})"
+		# return "{xobject "+str({str(self._name):self._val[0]})[1:]#[:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
+		# return str({"_val":self._val})
+		# return str(self._val)
+		# return str(self.__get__())
+
 	def __repr__(self):
 		justShow = True
 		if justShow:
-			self.show(ret = False)
+			self.show(ret=False)
 			print()
 		# print("where are we ?")
 		recursiveDict = False
@@ -377,32 +392,26 @@ class Expando(compareable):
 			self._setValue([[]])
 		if "function" in str(type(self._val)):
 			return str(self._val())
+		if "formula" in self and True:  # TODO: check valid formula
+			print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
+			return str(self._runFormula())
 		# ret = "{xobject "+str({str(self._name):self._val[0]})[1:-1]+f" ::: children({len(self.children())})"
-		ret = "{xobject "+str({str(self._name):self._val})[1:-1]+f" ::: children({len(self.children())})"
+		ret = "{xobject "+str({str(self._id.replace("/",".")): self._val}
+		                      )[1:-1]+f" ::: children({len(self.children())})"
 		childs = []
 		if self.children() is not None and len(self.children()) > 0:
-			if recursiveDict: #TODO DICT XXX
+			if recursiveDict:  # TODO DICT XXX
 				ret += f" ::: {self.children()}"
 			else:
 				for c in self.children():
 					# print("CCCCC",c)
 					childs.append(c)
 				ret += ":"+str(childs)
-		ret +="}"
+		ret += "}"
 		return ret
-		#
-		# return str({"_val":self._val})
-		# return str(self._val)+", "+str(self.__dict__)
-		# return str([self._val, self.__dict__])
 
 
-	def __str__(self):
-		print(f"!!!!!!! {self._name}")
-		return "{xobject "+str({str(self._name):self._val})[1:]#[:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
-		# return "{xobject "+str({str(self._name):self._val[0]})[1:]#[:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
-		# return str({"_val":self._val})
-		# return str(self._val)
-		# return str(self.__get__())
+
 
 	def GetXO(self, get="", allow_creation=False, getValue=False, follow=None):
 		print("GGGGGGGGGGGGGGGGG", get, getValue)
@@ -661,16 +670,8 @@ class Expando(compareable):
 		return self
 		
 	def __add__(self, other):
-		#### print("!!!!!!!!!")
-		#### print(type(other))
-		#### print()
-
-		#list append overrull
-		if self._val == None:
-			self._setValue([[]])
-		if len(self._val) == 0:
-			self._val[0].append(other)
-			return self._val[0]
+		if self._val is None:
+			return other
 		if str(type(other)) != str(type(self._val[0])):
 			if "list" not in str(type(other)):
 				other = [other]
@@ -679,67 +680,9 @@ class Expando(compareable):
 			return self._val[0] + other
 		return type(other)(self._val) + other
 
-		if other is None and (self._val is None or self._val[0] is None):
-			return None
-		if self.__isObj(other):
-			return self._val[0] + other._val[0]
-		elif "str" in str(type(other)):
-			return str(self._val) + other
-		if self._val[0] is None:
-			if "list" in str(type(other)):
-				return 	other
-			return []
-		if other is None:
-			other = []
-			return 	self._val + other
-		if "list" in str(type(other)):
-			if "list" in str(type(self._val[0])):
-				return self._val[0] + other
-			return 	self._val + other
-		return self._val[0] + other
-	# def __add__(self, other):
-	# 	#### print("!!!!!!!!!")
-	# 	#### print(type(other))
-	# 	#### print()
-
-	# 	#list append overrull
-	# 	if self._val == None:
-	# 		self._val = [[]]
-	# 	if len(self._val) == 0:
-	# 		self._val[0].append(other)
-	# 		return self._val[0]
-	# 	if str(type(other)) != str(type(self._val[0])):
-	# 		if "list" not in str(type(other)):
-	# 			other = [other]
-	# 		if "list" not in str(type(self._val[0])):
-	# 			self._val[0] = [self._val[0]]
-
-	# 	if other is None and (self._val is None or self._val[0] is None):
-	# 		return None
-	# 	if self.__isObj(other):
-	# 		return self._val[0] + other._val[0]
-	# 	elif "str" in str(type(other)):
-	# 		return str(self._val) + other
-	# 	if self._val[0] is None:
-	# 		if "list" in str(type(other)):
-	# 			return 	other
-	# 		return []
-	# 	if other is None:
-	# 		other = []
-	# 		return 	self._val + other
-	# 	if "list" in str(type(other)):
-	# 		if "list" in str(type(self._val[0])):
-	# 			return self._val[0] + other
-	# 		return 	self._val + other
-	# 	return self._val[0] + other
-
-	def __radd__(self,other):
-		if self._val == None:
-			self._setValue([[]])
-		if len(self._val) == 0:
-			self._val[0].append(other)
-			return self._val[0]
-
+	def __radd__(self, other):
+		if self._val is None:
+			return other
 		if str(type(other)) != str(type(self._val[0])):
 			if "list" not in str(type(other)):
 				other = [other]
@@ -747,9 +690,6 @@ class Expando(compareable):
 				self._val[0] = [self._val[0]]
 			return other + self._val[0]
 		return other + type(other)(self._val)
-		
-		return 
-		return self.__add__(other)
 
 	def __pos__(self, other):
 		#### # print("!!!!!!!!!")
