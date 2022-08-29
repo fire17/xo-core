@@ -43,26 +43,45 @@ xo = xo.xo
 xo.name.first = "tami"
 xo.name.last.nickname = "d. po"
 xo.name.last = "bar"
+
+
 # print(xo.name.last() is None)
 # print(xo.a.b.c() is None)
 # xo.a.b.c = True
 # print(xo.a.b.c == True)
+print(dict(xo))
+print("name" in xo)
+# xo.a.b = 3
+# xo.a.d = 4
+# print(xo.a.b > xo.a.d)
 xo.fullname @= xo.nice
 xo.nice = lambda x : print(" @ @ @ @ @ @ NICE!!!!! "+str(x))
-xo.fullname = "cool"
-xo.show()
 print("____________________________")
+xo.fullname = "cool"
+# xo.show()
+print(xo.name.first._subscribers)
 xo.fullname <<= lambda: f"{xo.name.first} {xo.name.last.nickname} {xo.name.last}"
 print("____________________________")
 print("____________________________")
-xo.show()
+# xo.show()
+# print(xo)
+print(xo.name.first._subscribers)
+print("____________________________")
 xo.name.first = "!"
+print(xo.name.first._subscribers)
+
+print("____________________________")
+print(xo.name)
+print("____________________________")
+print(xo.name.first)
 xo.name.last.nickname = "!!"
 xo.name.last = "!!!"
-xo.show()
-exit(1)
-xo.show()
+# xo.show()
+# xo.show()
 print("____________________________")
+print(xo.fullname)
+print("____________________________",dict(xo))
+exit(1)
 xo.fullname = "cool"
 exit(0)
 # xo.fullname = "???????"

@@ -23,7 +23,7 @@ import dill
 # 		super().__init__()
 # 		pass #print("|||||||||||||||||||||||||||||||||||||||||||||||||||")
 # 		self.__id = id
-# 		self._val = val
+# 		self[Expando._valueArg] = val
 # 		#### self.arg = arg
 
 # 	def __setattr__(self, name, value):
@@ -51,27 +51,28 @@ def getWatchablesForFormula(func):
 
 
 def getAllObjects(given):
-    given = given.split('<<=')[-1]
-    regex = re.compile(r'(?P<xo>xo(\.\w+)*)')
-    # regex = re.compile(r'(?P<name>xo.name\.[a-zA-Z]+)')
-    # regex = re.compile(r'\\w+(?:\\.\\w+)+')
+	given = given.split('<<=')[-1]
+	regex = re.compile(r'(?P<xo>xo(\.\w+)*)')
+	# regex = re.compile(r'(?P<name>xo.name\.[a-zA-Z]+)')
+	# regex = re.compile(r'\\w+(?:\\.\\w+)+')
 
-    def removeHiddenAtEnd(s):
-        end = s.split('.')[-1]
-        if not end.startswith('_'):
-            return s
-        else:
-            return removeHiddenAtEnd('.'.join(s.split('.')[:-1]))
+	def removeHiddenAtEnd(s):
+		end = s.split('.')[-1]
+		if not end.startswith('_'):
+			return s
+		else:
+			return removeHiddenAtEnd('.'.join(s.split('.')[:-1]))
 
-    return [removeHiddenAtEnd(x[0].lstrip("xo.")) for x in re.findall(regex, given)]
-
-
+	return [removeHiddenAtEnd(x[0].lstrip("xo.")) for x in re.findall(regex, given)]
 
 
-class Expando(object):
+
+
+class Expando(dict):
 	"""docstring for Expando."""
 	_hiddenAttr = ["value", "_val", "getattr", "show", "_id", "__dict__"]
 	_rootName = "xo"
+	_valueArg = "value"
 
 	__id = "xxx"
 
@@ -106,8 +107,8 @@ class Expando(object):
 #### 		#### self.__main__ = main
 #### 		self.__id__ = "hidden"
 #### 		self.__dict__.pop("__id__")
-#### 		self._val = val
-#### 		print("obj created! =",self._val)
+#### 		self[Expando._valueArg] = val
+#### 		print("obj created! =",self[Expando._valueArg])
 #### 		#### self._zzz = 5
 ####
 ####
@@ -125,7 +126,7 @@ class Expando(object):
 #### 			print("AAAAAAAAAAAAA",arg_name)
 
 	def tree(self):
-		for a in self.__dict__:
+		for a in self:
 			if not a.startswith("_") and a not in Expando._hiddenAttr:
 				yield self[a]
 				if self[a] != None:
@@ -157,7 +158,7 @@ class Expando(object):
 
 	def kids(self):
 
-				for a in self.__dict__:
+				for a in self:
 					if not a.startswith("_") and a not in Expando._hiddenAttr:
 						yield self[a]
 
@@ -166,7 +167,7 @@ class Expando(object):
 	def children(self):
 		# childs = []
 		childs = {}
-		for a in self.__dict__:
+		for a in self:
 			if not a.startswith("_") and a not in Expando._hiddenAttr:
 				# childs.append(self[a])
 				childs[a]=self[a]
@@ -175,69 +176,69 @@ class Expando(object):
 	def reloadImport(self, module):
 		return importlib.reload(module)
 		
-	def __init__(self, val = None, id = None, main = True, parent = None, **entries):####, wrapper = False, main = True):
-	####expando.py
-		#### def __init__(self):
-		#### es=traceback.extract_stack()
-		# super().__init__(id = id, val = val)
-		super().__init__()
-		pass #print("PPPPPPPPPPPPPP", id)
-		#### self.name = self.GetName()
+# 	def __init__(self, val = None, id = None, main = True, parent = None, **entries):####, wrapper = False, main = True):
+# 	####expando.py
+# 		#### def __init__(self):
+# 		#### es=traceback.extract_stack()
+# 		# super().__init__(id = id, val = val)
+# 		super().__init__()
+# 		pass #print("PPPPPPPPPPPPPP", id)
+# 		#### self.name = self.GetName()
 
-		self.__dict__.update(entries)
-		if id is None:
-			id = Expando._rootName
-		self._name = id.split("/")[-1]
-		self._id = id
-		# self._birth = datetime.now()
+# 		self.__dict__.update(entries)
+# 		if id is None:
+# 			id = Expando._rootName
+# 		self._name = id.split("/")[-1]
+# 		self._id = id
+# 		# self._birth = datetime.now()
 
-		# self.__id = id
-		# # print("........")
-		# super().__init__(val=val, id=id)
-		# # print("........ddd")
+# 		# self.__id = id
+# 		# # print("........")
+# 		# super().__init__(val=val, id=id)
+# 		# # print("........ddd")
 
-		# self.__id = id
-		self._isRoot = False
-		if parent is None:
-			self._isRoot = True
-		self._parent = parent
-		#### self.__validID_ = False
-		#### global GD
-		#### self.xxx = self.get_my_name()
-		#### print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@",mod_retrieve_name(self))
-		exist = True
-		'''
-		birth = str(time.time())
-		if id is None:
-			id = birth
-		'''
+# 		# self.__id = id
+# 		self._isRoot = False
+# 		if parent is None:
+# 			self._isRoot = True
+# 		self._parent = parent
+# 		#### self.__validID_ = False
+# 		#### global GD
+# 		#### self.xxx = self.get_my_name()
+# 		#### print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@",mod_retrieve_name(self))
+# 		exist = True
+# 		'''
+# 		birth = str(time.time())
+# 		if id is None:
+# 			id = birth
+# 		'''
 
-		self._subscribers = []
-		# self._triggers = []
-
-
-		#### self.__main__ = main
-		self.__id__ = "hidden"
-		self.__dict__.pop("__id__")
-		self._val = val
-		# print("obj created! =",self._val)
-		self._zzz = 5
-		#### print("******---",self.get_my_name())
-		#### self["_id"] = self.get_my_name()[0]
-
-		#### self.xxx.yyy.zzz = 13
-		#### updateID = Thread(target = self.makeID, args = [list,])
-		#### updateID.start()
-
-		# print("AAAAAAAAAAA	AAA",entries,self.__name__)
-		for arg_name in entries:
-			pass #print("AAAAAAAAAAAAA",arg_name)
+# 		self._subscribers = []
+# 		# self._triggers = []
 
 
-# 		# Binding the object to the value
-#		# global manager
-# 		# self._manager = manager
-# 		# self._val = manager.bind(self.__id, val, ref=[self])
+# 		#### self.__main__ = main
+# 		self.__id__ = "hidden"
+# 		self.__dict__.pop("__id__")
+# 		self[Expando._valueArg] = val
+# 		# print("obj created! =",self[Expando._valueArg])
+# 		self._zzz = 5
+# 		#### print("******---",self.get_my_name())
+# 		#### self["_id"] = self.get_my_name()[0]
+
+# 		#### self.xxx.yyy.zzz = 13
+# 		#### updateID = Thread(target = self.makeID, args = [list,])
+# 		#### updateID.start()
+
+# 		# print("AAAAAAAAAAA	AAA",entries,self.__name__)
+# 		for arg_name in entries:
+# 			pass #print("AAAAAAAAAAAAA",arg_name)
+
+
+# # 		# Binding the object to the value
+# #		# global manager
+# # 		# self._manager = manager
+# # 		# self[Expando._valueArg] = manager.bind(self.__id, val, ref=[self])
 	
 
 
@@ -249,51 +250,54 @@ class Expando(object):
 		return self.__id__
 
 
-	def __set__(self, key, val):
+	def __xset__(self, key, val):
 		pass
 		# print("eeeeeeeeeeeeeeeeeeeee")
 		self.__dict__[key] = val
 		return True
 
-	def __get__(self,key):
+	def __xget__(self,key):
 		pass
-		# print("eeeeeeeeeeeeeeeeeeeeeaaa")
+		print("eeeeeeeeeeeeeeeeeeeeeaaa")
 		return self.__dict__[key]
 
 
-	def __setattr__(self, name, value):
-		pass ## print("EEEEEEEEEEEEEEEEEEEE1")
-		if "str" not in str(type(name)):
-			name = str(name)
-		if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr:#### and "__skip" in self.__dict__ and name not in self.skip:
-			if "Expando" not in str(type(value)):
-				pass ## print("_____________________",str(type(value)))
-				if name not in self.__dict__:
-					pass ## print("2222222222")
-					# print("ppp33333",self._id)
-					# self[name] = obj(id = self._id+"/"+name, val= value, parent = __objManager.getXO(self._id))
-					self[name] = Expando(id = self._id+"/"+name, val= value, parent = self)
-				else:
-					pass ## print("33333333")
-					#### self.__set__(name,value)
-					#### self.save(id = self._id+"/"+name, val= value)
-					# if data binding
-					# manager.save(channel = self._id+"/"+name, data=value)
-					self[name]._val = value #?????
-					self[name]._updateSubscribers_(value)
-			else:
-				pass ## print("44444")
-				self.__dict__[name] = value
+	# def __setattr__(self, name, value):
+	# 	pass ## print("EEEEEEEEEEEEEEEEEEEE1")
+	# 	if "str" not in str(type(name)):
+	# 		name = str(name)
+	# 	if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr:#### and "__skip" in self.__dict__ and name not in self.skip:
+	# 		if "Expando" not in str(type(value)):
+	# 			pass ## print("_____________________",str(type(value)))
+	# 			if name not in self.__dict__:
+	# 				pass ## print("2222222222")
+	# 				# print("ppp33333",self._id)
+	# 				# self[name] = obj(id = self._id+"/"+name, val= value, parent = __objManager.getXO(self._id))
+	# 				self[name] = Expando(id = self._id+"/"+name, val= value, parent = self)
+	# 			else:
+	# 				pass ## print("33333333")
+	# 				#### self.__set__(name,value)
+	# 				#### self.save(id = self._id+"/"+name, val= value)
+	# 				# if data binding
+	# 				# manager.save(channel = self._id+"/"+name, data=value)
+	# 				self[name][Expando._valueArg] = value #?????
+	# 				self[name]._updateSubscribers_(value)
+	# 		else:
+	# 			pass ## print("44444")
+	# 			self.__dict__[name] = value
 
-		else:
-			pass ## print("555555555")
-			self.__dict__[name] = value
+	# 	else:
+	# 		pass ## print("555555555")
+	# 		self.__dict__[name] = value
 
-	def __getitem__(self, name):
+	def keys(self):
+		return self.keys()
+
+	def __xgetitem__(self, name):
+		print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
 		if "str" not in str(type(name)):
 			name = str(name)
 		elif name == "value":
-			# print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
 			# name = "_val"
 			atr = object.__getattribute__(self, name)
 			# return atr[0]
@@ -318,7 +322,7 @@ class Expando(object):
 	def __assign__(self, v):
 		pass #print('called with %s' % v)
 
-	def __setitem__(self, name, value):
+	def __xsetitem__(self, name, value):
 		pass #print("iiiiiiiiiiiiiiiiioooooooo")
 		if "str" not in str(type(name)):
 			name = str(name)
@@ -343,7 +347,7 @@ class Expando(object):
 
 		#### print("FINISHED SETTING ITEM", self.__dict__)
 
-	def __getattribute__(self, name, loop = True):
+	def __xgetattribute__(self, name, loop = True):
 		# print("NAME:",name)
 		# time.sleep(0.1)
 		if "str" not in str(type(name)):
@@ -356,85 +360,114 @@ class Expando(object):
 			return atr
 		atr = object.__getattribute__(self, name)
 		return atr
-	def __getattr__(self, name, loop = True):
-		pass #print("getttt")
-		if "str" not in str(type(name)):
-			name = str(name)
-		#### return name
-		if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr and name not in self.__dict__:
-			pass #print("OOOOO_ooooooooooooooooooooo",name)####,self.__dict__)
-			pass #print("aaaaaaaaaaaaaa")
-			# print("ppp66666",self)
-			# self[name] = obj(id = self._id+"/"+name, parent = self)
-			self[name] = Expando(id = self._id+"/"+name, parent = self)
-		if name in self.__dict__:
-			pass #print("bbbbbbbbbbbbbbb")
-			atr = object.__getattribute__(self, name)
+		
+	# def __getattr__(self, name, loop = True):
+	# 	print("getttt")
+	# 	if "str" not in str(type(name)):
+	# 		name = str(name)
+	# 	#### return name
+	# 	if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr and name not in self.__dict__:
+	# 		pass #print("OOOOO_ooooooooooooooooooooo",name)####,self.__dict__)
+	# 		pass #print("aaaaaaaaaaaaaa")
+	# 		# print("ppp66666",self)
+	# 		# self[name] = obj(id = self._id+"/"+name, parent = self)
+	# 		self[name] = Expando(id = self._id+"/"+name, parent = self)
+	# 		return self[name] #?
+	# 	if name in self.__dict__:
+	# 		pass #print("bbbbbbbbbbbbbbb")
+	# 		atr = object.__getattribute__(self, name)
 
-			return atr
-		#### return 13
-		pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-		pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-		pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-		pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-		pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-		pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$xxxxxxxxxxxx")
+	# 		return atr
+	# 	#### return 13
+	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$xxxxxxxxxxxx")
 
 	def _setValue(self, val):
-		self._val = val
+		self[Expando._valueArg] = val
+		object.__setattr__(self, "value", val)
+		# if name == Expando._valueArg:
+		# 				self[name] = value
+		# 				self[name] = value
+		# 			else:
+		# 				print("........")
+		# 				#final .x =
+		# 				self[name] = Expando(id=self._id+"/"+name, val=value, parent=self)
+		# 				object.__setattr__(self, name, Expando(
+		# 					id=self._id+"/"+name, val=value, parent=self))
 		self._updateSubscribers_(val)
 
-	def __getstate__(self):
+	def __xgetstate__(self):
 		pass #print ("I'm being pickled")
 		pass #print(self.__dict__)
 		pass #print()
 		return False
 
-	def __setstate__(self, d):
+	def __xsetstate__(self, d):
 		pass #pprint ("I'm being unpickled with these values:", d)
 		self.__dict__ = d
-		#### self._val *= 3
+		#### self[Expando._valueArg] *= 3
+	
 
-	def __iter__(self):
-		# print("ITTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
-		return self.kids()
+	def __xiter__(self):
+		for a in self.__dict__:
+			print("ITER",a)
+			
+			def x():
+				print("xxxxxxxxxxxx")
+			
 
-	def __str__(self):
+			# if not a.startswith("_"):# and a not in Expando._hiddenAttr:
+			# 	res = self[a]
+			# 	if "Expando" in str(type(res)):
+			# 		yield res.__iter__()
+			# 	yield (a, res)
+				
+	# def __iter__(self):
+	# 	return iter(self.__dict__)
+	# 	# print("ITTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
+	# 	# return self.kids()
+
+	def __xstr__(self):
 		# print(f"!!!!!!! {self._name}")
-		if self._val is not None:
+		if self[Expando._valueArg] is not None:
 			if "formula" in self and True:  # TODO: check valid formula
 				# print("iiiiiiiiiiiiiiiiiiiiiiiiiiistr",self._lastLoaded,self._lastUpdated)
 				if self._lastLoaded == self._lastUpdated:
-					return str(self._val)
+					return str(self[Expando._valueArg])
 				return str(self._runFormula())
-			return str(self._val)
+			return str(self[Expando._valueArg])
 		# [:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
-		return "{xobject "+str({str(self._id.replace("/", ".")): str(self._val)}
-                         )[1:-1]+f" ::: children({len(self.children())})"
-		# return "{xobject "+str({str(self._name):self._val[0]})[1:]#[:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
-		# return str({"_val":self._val})
-		# return str(self._val)
+		return "{xobject "+str({str(self._id.replace("/", ".")): str(self[Expando._valueArg])}
+						 )[1:-1]+f" ::: children({len(self.children())})"
+		# return "{xobject "+str({str(self._name):self[Expando._valueArg][0]})[1:]#[:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
+		# return str({"_val":self[Expando._valueArg]})
+		# return str(self[Expando._valueArg])
 		# return str(self.__get__())
 
-	def __repr__(self):
+	def __xrepr__(self):
 		justShow = True
 		if justShow:
 			self.show(ret=False)
 			print()
 		# print("where are we ?")
 		recursiveDict = False
-		if self._val is not None:
+		if self[Expando._valueArg] is not None:
 			# self._setValue([[]])
-			if "function" in str(type(self._val)):
-				return str(self._val())
+			if "function" in str(type(self[Expando._valueArg])):
+				print("iiiiiiiiiii",self._id)
+				return str(self[Expando._valueArg]())
 			if "formula" in self and True:  # TODO:`` check valid formula
 				# print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
 				if self._lastLoaded == self._lastUpdated:
-					return str(self._val)
+					return str(self[Expando._valueArg])
 				return str(self._runFormula())
-		# ret = "{xobject "+str({str(self._name):self._val[0]})[1:-1]+f" ::: children({len(self.children())})"
-		ret = "{xobject "+str({str(self._id.replace("/",".")): str(self._val)}
-		                      )[1:-1]+f" ::: children({len(self.children())})"
+		# ret = "{xobject "+str({str(self._name):self[Expando._valueArg][0]})[1:-1]+f" ::: children({len(self.children())})"
+		ret = "{xobject "+str({str(self._id.replace("/",".")): str(self[Expando._valueArg])}
+							  )[1:-1]+f" ::: children({len(self.children())})"
 		childs = []
 		if self.children() is not None and len(self.children()) > 0:
 			if recursiveDict:  # TODO DICT XXX
@@ -465,16 +498,16 @@ class Expando(object):
 		# print(";;@;;;;;",self._id, get)
 		
 		final = self
-		# print("FFFFFFFFFFFFFFF")
-		# print("FFFFFFFFFFFFFFF")
-		# print("FFFFFFFFFFFFFFF")
-		# print(final, final._id)
+		print("FFFFFFFFFFFFFFF")
+		print("FFFFFFFFFFFFFFF")
+		print("FFFFFFFFFFFFFFF")
+		print(final, final._id)
 		for child in get.split("."):
 			final = final[child]
 		# print(final,final._id)
-		# print("FFFFFFFFFFFFFFF")
-		# print("FFFFFFFFFFFFFFF")
-		# print("FFFFFFFFFFFFFFF")
+		print("FFFFFFFFFFFFFFF")
+		print("FFFFFFFFFFFFFFF")
+		print("FFFFFFFFFFFFFFF")
 		return final
 
 	def GetXOx(self, get="", allow_creation=False, getValue=False, follow=None):
@@ -504,15 +537,15 @@ class Expando(object):
 		# print(c,c,c,c,c,c,c,c,c,c);c+=1
 		if get == "":
 			# print(c,c,c,c,c,c,c,c,c,c);c+=10
-			if follow is not None and follow._val is not None:
+			if follow is not None and follow[Expando._valueArg] is not None:
 				# print(c,c,c,c,c,c,c,c,c,c);c+=100
-				if "list" in str(type(follow._val)):
-					if len(follow._val) > 0:
+				if "list" in str(type(follow[Expando._valueArg])):
+					if len(follow[Expando._valueArg]) > 0:
 						if getValue:
-							return follow._val[0]
+							return follow[Expando._valueArg][0]
 						return follow
 				if getValue:
-					return follow._val
+					return follow[Expando._valueArg]
 				return follow
 
 			# print(c,c,c,c,c,c,c,c,c,c);c+=1000
@@ -531,7 +564,7 @@ class Expando(object):
 		for sub in self._subscribers:
 			#TODO: in new thread
 			# print(sub)
-			# print("&&&",self._val, sub)
+			# print("&&&",self[Expando._valueArg], sub)
 			# print("***************")
 			# print(sub(*v, **kw))
 			sub(*v, **kw)
@@ -562,7 +595,7 @@ class Expando(object):
 		
 
 
-	# xo.trigger @= lambda Subscibe to changes
+	# xo.trigger @= lambda Subscribe to changes
 	def __imatmul__(self, other):
 		if "tuple" in str(type(other)):
 			res = None
@@ -576,21 +609,21 @@ class Expando(object):
 	def _runFormula(self):
 		if True or "formula" in self:
 			if self._lastUpdated == self._lastLoaded:
-				return self._val
+				return self[Expando._valueArg]
 				# return self.formula.currentValue
 			else:
-				# formula = self.formula._val
+				# formula = self.formula[Expando._valueArg]
 				# newValue = formula()
 				newValue = self.formula()
 				# self.formula.currentValue = newValue
-				# self._val = newValue
+				# self[Expando._valueArg] = newValue
 				# self = newValue
 				self._lastLoaded = self._lastUpdated
 				# print("xxxxxxxx", self, formula, getsource(formula))
-				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
 				self._setValue(newValue)
 				# print("=========-",newValue)
 				
@@ -605,18 +638,18 @@ class Expando(object):
 		self._lastLoaded = time.time()
 		self._lastUpdated = time.time() # not matching same time on purpose -> will trigger fetch
 		# self.currentValue = formula()
-		# self._val = currentValue
+		# self[Expando._valueArg] = currentValue
 		# print("@@@@@@@@@ expando?",type(self))
 
 		# self._setValue(lambda : self._runFormula())
 		# self()
 		
 
-		# self._val = lambda : self._runFormula()
+		# self[Expando._valueArg] = lambda : self._runFormula()
 		# self.formula = lambda : self._parent() 
-		# self._val = lambda : self._parent() if self._lastUpdated == self._lastLoaded else runFormula(self.formula)
+		# self[Expando._valueArg] = lambda : self._parent() if self._lastUpdated == self._lastLoaded else runFormula(self.formula)
 		# setValue(self, currentValue)
-		# self = lambda : self._val if self._lastUpdated == self._lastLoaded else self._formula()
+		# self = lambda : self[Expando._valueArg] if self._lastUpdated == self._lastLoaded else self._formula()
 
 		
 		def setLastUpdated(xobject):
@@ -650,23 +683,23 @@ class Expando(object):
 
 
 
-	def __is__(self, other):
-		return self.__eq__(other)
+	# def __is__(self, other):
+	# 	return self.__eq__(other)
 
-	def __and__(self, other):
-		return self & other
+	# def __and__(self, other):
+	# 	return self & other
 
-	def __or__(self, other):
-		return self | other
+	# def __or__(self, other):
+	# 	return self | other
 
-	def __contains__(self, key):
-		return key in self.__dict__
+	# def __contains__(self, key):
+	# 	return key in self.__dict__
 
 	def __xor__(self, other):
 		return self ^ other
 
 	def __invert__(self, other):
-		return ~self._val
+		return ~self[Expando._valueArg]
 
 	def __lshift__(self, other):
 		return self << other
@@ -675,209 +708,215 @@ class Expando(object):
 		return self >> other
 
 	def __bool__(self, other):
-		return bool(self._val)
+		return bool(self[Expando._valueArg])
 
-	def __abs__(self, other):
-		return abs(self._val)
+	# def __abs__(self, other):
+	# 	return abs(self[Expando._valueArg])
 
-	def __abs__(self, other):
-		return abs(self._val)
+	# def __abs__(self, other):
+	# 	return abs(self[Expando._valueArg])
+
 
 	#### by value of main
-	def __eq__(self, other):
-		if type(self._val) is not list:
-			return None == other
-		if "bool" in str(type(other)) and ("bool" in str(type(self._val)) or (self._val is not None and ("dict" in str(type(self._val[0])) or "dict" in str(type(self._val[0])) )and len(self._val) > 0 and "bool" in str(type(self._val[0])))):
-			return self._val[0] == other
-		if self.__isObj(other):
-			return self._val[0] == other._val[0]
-		elif "str" in str(type(other)):
-			return str(self._val[0]) == other
-		return self._val[0] == other
-
+	# def __eq__(self, other):
+	# 	if type(self[Expando._valueArg]) is not list:
+	# 		return None == other
+	# 	if "bool" in str(type(other)) and ("bool" in str(type(self[Expando._valueArg])) or (self[Expando._valueArg] is not None and ("dict" in str(type(self[Expando._valueArg][0])) or "dict" in str(type(self[Expando._valueArg][0])) )and len(self[Expando._valueArg]) > 0 and "bool" in str(type(self[Expando._valueArg][0])))):
+	# 		return self[Expando._valueArg][0] == other
+	# 	if self.__isObj(other):
+	# 		return self[Expando._valueArg][0] == other[Expando._valueArg][0]
+	# 	elif "str" in str(type(other)):
+	# 		return str(self[Expando._valueArg][0]) == other
+	# 	return self[Expando._valueArg][0] == other
+	# def __cmp__(self):
+	# 	print("$$$$$$$$$$$$$$$$$$$$$$")
+	# 	return self[Expando._valueArg]
 	def __ge__(self, other):
-		if self.__isObj(other):
-			return self._val[0] >= other._val[0]
-		return self._val[0] >= other
+		if type(other) is Expando:
+			return self[Expando._valueArg] >= other[Expando._valueArg]
+		return self[Expando._valueArg] >= other
 
 	def __gt__(self, other):
-		if self.__isObj(other):
-			return self._val[0] > other._val[0]
-		return self._val[0] > other
+		# if self.__isObj(other):
+		if type(other) is Expando:
+			return self[Expando._valueArg] > other[Expando._valueArg]
+		return self[Expando._valueArg] > other
 
 	def __le__(self, other):
-		if self.__isObj(other):
-			return self._val[0] <= other._val[0]
-		return self._val[0] <= other
+		# if self.__isObj(other):
+		if type(other) is Expando:
+			return self[Expando._valueArg] <= other[Expando._valueArg]
+		return self[Expando._valueArg] <= other
 
 	def __lt__(self, other):
-		if self.__isObj(other):
-			return self._val[0] < other._val[0]
-		return self._val[0] < other
+		# if self.__isObj(other):
+		if type(other) is Expando:
+			return self[Expando._valueArg] < other[Expando._valueArg]
+		return self[Expando._valueArg] < other
 
 
 	def __iadd__(self, other):
-		self._val += other
+		self[Expando._valueArg] += other
 		return self
 		
 	def __add__(self, other):
-		if self._val is None:
+		if self[Expando._valueArg] is None:
 			return other
 		matchWith = other
 		if self.__isObj(other):
-			matchWith = other._val
+			matchWith = other[Expando._valueArg]
 			# print("$$$$$$$$$$$$$$$$$$$$$$1")
-			# return self._val + other._val
-		# if str(type(other)) != str(type(self._val[0])):
+			# return self[Expando._valueArg] + other[Expando._valueArg]
+		# if str(type(other)) != str(type(self[Expando._valueArg][0])):
 		# 	if "list" not in str(type(other)):
 		# 		other = [other]
-		# 	if "list" not in str(type(self._val[0])):
-		# 		self._val[0] = [self._val[0]]
-		# 	return self._val[0] + other
-		return type(matchWith)(self._val) + matchWith
+		# 	if "list" not in str(type(self[Expando._valueArg][0])):
+		# 		self[Expando._valueArg][0] = [self[Expando._valueArg][0]]
+		# 	return self[Expando._valueArg][0] + other
+		return type(matchWith)(self[Expando._valueArg]) + matchWith
 
 	def __radd__(self, other):
-		if self._val is None:
+		if self[Expando._valueArg] is None:
 			return other
 		matchWith = other
 		if self.__isObj(other):
 			print("$$$$$$$$$$$$$$$$$$$$$$2")
-			matchWith = other._val
-		# if str(type(other)) != str(type(self._val[0])):
+			matchWith = other[Expando._valueArg]
+		# if str(type(other)) != str(type(self[Expando._valueArg][0])):
 		# 	if "list" not in str(type(other)):
 		# 		other = [other]
-		# 	if "list" not in str(type(self._val[0])):
-		# 		self._val[0] = [self._val[0]]
-		# 	return other + self._val[0]
-		return matchWith + type(matchWith)(self._val)
+		# 	if "list" not in str(type(self[Expando._valueArg][0])):
+		# 		self[Expando._valueArg][0] = [self[Expando._valueArg][0]]
+		# 	return other + self[Expando._valueArg][0]
+		return matchWith + type(matchWith)(self[Expando._valueArg])
 
 	def __pos__(self, other):
 		#### # print("!!!!!!!!!")
 		#### # print(type(other))
 		#### # print()
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val + other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] + other
 
 	def __sub__(self, other):
 		#### print("!!!!!!!!!")
 		pass  # print(type(other))
 		pass  # print()
 		if self.__isObj(other):
-			return self._val[0] - other._val[0]
+			return self[Expando._valueArg] - other[Expando._valueArg]
 		elif "str" in str(type(other)):
 			pass  # print("::::::::::::::xxxx:::::::::")
-			return str(self._val[0]) - other
-		return self._val[0] - other
+			return str(self[Expando._valueArg]) - other
+		return self[Expando._valueArg] - other
 
 	def __rsub__(self,other):
 		pass ## print(type(other))
 		pass ## print()
 		if self.__isObj(other):
-			return other._val[0] - self._val[0]
+			return other[Expando._valueArg] - self[Expando._valueArg]
 		elif "str" in str(type(other)):
 			# print("::::::::::::::xxxx:::::::::")
-			return other - str(self._val[0])
-		return other - self._val[0]
+			return other - str(self[Expando._valueArg])
+		return other - self[Expando._valueArg]
 
 
 	def __truediv__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val / other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] / other
 		
 	def __rtruediv__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return other / self._val
+			return str(self[Expando._valueArg]) + other
+		return other / self[Expando._valueArg]
 
 	def __floordiv__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val // other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] // other
 		
 	def __rfloordiv__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return other // self._val
+			return str(self[Expando._valueArg]) + other
+		return other // self[Expando._valueArg]
 		
 	def __mod__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val % other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] % other
 
 	def __rmod__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return other % self._val 
+			return str(self[Expando._valueArg]) + other
+		return other % self[Expando._valueArg] 
 
 	def __pow__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val ** other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] ** other
 
 	def __rpow__(self, other):
 		return self.__mul__(other)
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val ** other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] ** other
 
 	def __mul__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val * other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] * other
 
 	def __rmul__(self, other):
 		return self.__mul__(other)
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val * other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] * other
 
 	def __div__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return self._val / other
+			return str(self[Expando._valueArg]) + other
+		return self[Expando._valueArg] / other
 		
 	def __rdiv__(self, other):
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return str(self._val) + other
-		return other / self._val
+			return str(self[Expando._valueArg]) + other
+		return other / self[Expando._valueArg]
 
 	def __neg__(self):
-		return -self._val
+		return -self[Expando._valueArg]
 		#### print("!!!!!!!!!")
 		#### print(type(other))
 		#### print()
 		if self.__isObj(other):
-			return self._val + other._val
+			return self[Expando._valueArg] + other[Expando._valueArg]
 		elif "str" in str(type(other)):
-			return self._val + other
+			return self[Expando._valueArg] + other
 
 	def __isObj(self, o):
 		#### print("################################################################################################################",str(type(o)))
@@ -946,7 +985,7 @@ class Expando(object):
 					self._parent.learned+=[a]
 				else:
 					print(" ::: WTF")
-					self.value(ref=True).append(a)
+					self[Expando._valueArg](ref=True).append(a)
 				print( f" ::: New Element xo.{owner.strip('/')}.learned = {a}")
 
 			return self._GetXO(owner)
@@ -957,18 +996,18 @@ class Expando(object):
 		# for v in vars:
 		# 	print(v)
 		retXO = False
-		# if "function" in str(type(self._val)) or "method" in str(type(self._val)):
-		if "function" in str(type(self._val)):
-			# print("!!!!!!!!!!#####",str(type(self._val)))
-			return self._val(*vars, **kwargs )
+		# if "function" in str(type(self[Expando._valueArg])) or "method" in str(type(self[Expando._valueArg])):
+		if "function" in str(type(self[Expando._valueArg])):
+			# print("!!!!!!!!!!#####",str(type(self[Expando._valueArg])))
+			return self[Expando._valueArg](*vars, **kwargs )
 		if "formula" in self and True:  # TODO: check valid formula
 			# print("ccccccccccccccccccccccccall",self._lastLoaded, self._lastUpdated)
 			if self._lastLoaded == self._lastUpdated:
 				# print("@@@@@@@")
-				return self._val
+				return self[Expando._valueArg]
 			# print("+++++++",self._id)
 			return self._runFormula()
-		elif self._val is not None and len(self._val)>0 and "function" in str(type(self._val[0])):
+		elif self[Expando._valueArg] is not None and len(self[Expando._valueArg])>0 and "function" in str(type(self[Expando._valueArg])):
 			# print("!!!!!!!!!![0]")
 			if "asyn" in kwargs and kwargs["asyn"] == True:
 				xkwargs = {}
@@ -978,27 +1017,27 @@ class Expando(object):
 					elif "retxo" in a.lower():
 						retXO = True
 				if not retXO:
-					return self._startThread(self._val[0], vars, xkwargs)
+					return self._startThread(self[Expando._valueArg], vars, xkwargs)
 				else:
-					self._startThread(self._val[0], vars, xkwargs)
+					self._startThread(self[Expando._valueArg], vars, xkwargs)
 					return self
 			if not retXO:
-				return self._val[0](*vars, **kwargs)
+				return self[Expando._valueArg](*vars, **kwargs)
 			else:
-				self._val[0](*vars, **kwargs)
+				self[Expando._valueArg](*vars, **kwargs)
 				return self
 
 
-		# print(" XXX CCC",self._id, self._val)
+		# print(" XXX CCC",self._id, self[Expando._valueArg])
 		if not retXO:
-			if self._val is not None and ("ref" not in kwargs or kwargs["ref"] is not True):
-				if "list" in str(type(self._val)) and len(self._val) == 1:
-					return self._val[0]
-			return self._val
-			# return self._val[0](*vars, **kwargs)
+			if self[Expando._valueArg] is not None and ("ref" not in kwargs or kwargs["ref"] is not True):
+				if "list" in str(type(self[Expando._valueArg])) and len(self[Expando._valueArg]) == 1:
+					return self[Expando._valueArg]
+			return self[Expando._valueArg]
+			# return self[Expando._valueArg][0](*vars, **kwargs)
 		else:
-			return self._val
-			# self._val[0](*vars, **kwargs)
+			return self[Expando._valueArg]
+			# self[Expando._valueArg][0](*vars, **kwargs)
 			# return self
 		# print(":::::::::::::::::::::::")
 
@@ -1007,11 +1046,11 @@ class Expando(object):
 	def show(self,t = "    ",count = 0, inLoop = False, ret = False):
 		#### print("ssssssssssssssss..............")
 		s = ""
-		#### print("///////////",self._val,type(self._val))
+		#### print("///////////",self[Expando._valueArg],type(self[Expando._valueArg]))
 
-		if "str" in str(type(self._val)):
+		if "str" in str(type(self[Expando._valueArg])):
 			s = "\'"
-		p = self._id.split("/")[-1] +" = "+ s+str(self._val)+s
+		p = self._id.split("/")[-1] +" = "+ s+str(self[Expando._valueArg])+s
 		tab = ""
 		for i in range(count):
 			tab+=t
@@ -1023,14 +1062,14 @@ class Expando(object):
 			retList.append(p)
 		else:
 			print(p.replace("\t","    "))
-		for a in self.__dict__:
+		for a in self:
 			# if "_" not in a:
 			if not a.startswith("_"):
-				if "Expando" in str(type(self.__dict__[a])):
+				if "Expando" in str(type(self[a])):
 					if ret:
-						res = self.__dict__[a].show(count= count+1, ret = ret)
+						res = self[a].show(count= count+1, ret = ret)
 					else:
-						self.__dict__[a].show(count= count+1, ret = ret)
+						self[a].show(count= count+1, ret = ret)
 		if count == 0 and inLoop:
 			print("\n\nPress Ctrl+C to stop whileShow()\n")
 
@@ -1042,11 +1081,11 @@ class Expando(object):
 	def show0(self,t = "    ",count = 0, inLoop = False):
 		#### print("ssssssssssssssss..............")
 		s = ""
-		#### print("///////////",self._val,type(self._val))
+		#### print("///////////",self[Expando._valueArg],type(self[Expando._valueArg]))
 
-		if "str" in str(type(self._val)):
+		if "str" in str(type(self[Expando._valueArg])):
 			s = "\'"
-		p = self._id.split("/")[-1] +" = "+ s+str(self._val)+s
+		p = self._id.split("/")[-1] +" = "+ s+str(self[Expando._valueArg])+s
 		tab = ""
 		for i in range(count):
 			tab+=t
@@ -1065,28 +1104,28 @@ class Expando(object):
 		return self.show(t=t,count = count)
 		## print("ssssssssssssssss..............")
 		s = ""
-		## print("///////////",self._val,type(self._val))
+		## print("///////////",self[Expando._valueArg],type(self[Expando._valueArg]))
 
-		if "str" in str(type(self._val)):
+		if "str" in str(type(self[Expando._valueArg])):
 			s = "\'"
 
 
-		if "list" in str(type(self._val[0])):
+		if "list" in str(type(self[Expando._valueArg][0])):
 
 			fullid = ""
 			for i in self._id.split("/")[1:]:
 				fullid += i + " "
 			fullid = fullid[:-1]
-			#p = self._id.split("/")[-1] +" = "+ s+str(len(self._val[0]))+s + etab + str(self._val)
-			p = fullid +"  = x"+ s+str(len(self._val[0])) + " times"
+			#p = self._id.split("/")[-1] +" = "+ s+str(len(self[Expando._valueArg][0]))+s + etab + str(self[Expando._valueArg])
+			p = fullid +"  = x"+ s+str(len(self[Expando._valueArg][0])) + " times"
 			l = len(p)%len(t)
 			etab = ""
 			for i in range((60 - len(t)*count) - len(p)):
 				etab+=" "
 
-			p += etab + "index: " + str(self._val)+s
+			p += etab + "index: " + str(self[Expando._valueArg])+s
 		else:
-			p = self._id.split("/")[-1] +" = "+ s+str(self._val)+s
+			p = self._id.split("/")[-1] +" = "+ s+str(self[Expando._valueArg])+s
 
 		tab = ""
 		for i in range(count):
@@ -1150,11 +1189,171 @@ class Expando(object):
 	# 	# manager.save(self._id, value)
 	# 	pass
 
-	def value(self, ref=False):
-		if ref:
-			return self._val
-		return self._val[0]
+	# def value(self, ref=False):
+	# 	if ref:
+	# 		return self[Expando._valueArg]
+	# 	return self[Expando._valueArg]
 
+	def __init__(self, val=None, id=None, main=True, parent=None, **entries):
+		####expando.py
+		#### def __init__(self):
+		#### es=traceback.extract_stack()
+		# super().__init__(id = id, val = val)
+		if id is None:
+			id = Expando._rootName
+		# super().__init__(*(None, val))
+		# super().__init__(val)
+		# super().__init__()
+		pass  # print("PPPPPPPPPPPPPP", id)
+		#### self.name = self.GetName()
+
+		self.update(entries)
+		self._name = id.split("/")[-1]
+		self._id = id
+		# self._birth = datetime.now()
+
+		# self.__id = id
+		# # print("........")
+		# super().__init__(val=val, id=id)
+		# # print("........ddd")
+
+		# self.__id = id
+		self._isRoot = False
+		if parent is None:
+			self._isRoot = True
+		self._parent = parent
+		#### self.__validID_ = False
+		#### global GD
+		#### self.xxx = self.get_my_name()
+		#### print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@",mod_retrieve_name(self))
+		exist = True
+		'''
+		birth = str(time.time())
+		if id is None:
+			id = birth
+		'''
+
+		self._subscribers = []
+		# self._triggers = []
+
+		#### self.__main__ = main
+		# self.__id__ = "hidden"
+		# self.__dict__.pop("__id__")
+		# self[Expando._valueArg] = val
+		if val is not None:
+			# self[Expando._valueArg] = val
+			self[Expando._valueArg] = val
+		# self.__dict__["val"] = 3
+		# print("obj created! =",self[Expando._valueArg])
+		self._zzz = 5
+		#### print("******---",self.get_my_name())
+		#### self["_id"] = self.get_my_name()[0]
+
+		#### self.xxx.yyy.zzz = 13
+		#### updateID = Thread(target = self.makeID, args = [list,])
+		#### updateID.start()
+
+		# print("AAAAAAAAAAA	AAA",entries,self.__name__)
+		for arg_name in entries:
+			pass  # print("AAAAAAAAAAAAA",arg_name)
+
+
+# 		# Binding the object to the value
+#		# global manager
+# 		# self._manager = manager
+# 		# self[Expando._valueArg] = manager.bind(self.__id, val, ref=[self])
+
+	def __setattr__(self, name, value):
+		# print("EEEEEEEEEEEEEEEEEEEE1",self.__dict__)
+		if "str" not in str(type(name)):
+			name = str(name)
+		# and "__skip" in self.__dict__ and name not in self.skip:
+		if (not name.startswith("_") or name == Expando._valueArg) and name not in Expando._hiddenAttr:
+			if "Expando" not in str(type(value)):
+				# if type(value) is not Expando:
+				print(f"____________{name}_________", str(type(value)))
+				if name not in self:
+					print("2222222222")
+					# print("ppp33333",self._id)
+					# self[name] = obj(id = self._id+"/"+name, val= value, parent = __objManager.getXO(self._id))
+					if name == Expando._valueArg:
+						self[name] = value
+						object.__setattr__(self, name, value)
+						self[name] = value
+					else:
+						print("........")
+						#final .x =
+						res = Expando(id=self._id+"/"+name, val=value, parent=self)
+						self[name] = res
+						object.__setattr__(self, name, res)
+				else:
+					# print("33333333")
+					#### self.__set__(name,value)
+					#### self.save(id = self._id+"/"+name, val= value)
+					# if data binding
+					# manager.save(channel = self._id+"/"+name, data=value)
+					# self[name]._value = value  # ?????
+					self[name][Expando._valueArg] = value  # ?????
+					# self[name+"2"]._val = value  # ?????
+				self[name]._updateSubscribers_(value)
+			else:
+				print("44444")
+				self[name] = value
+				print("44444")
+				# self[name]._updateSubscribers_(value)
+
+
+		else:
+			print("555555555", name)
+			# self.__dict__[name] = value
+			# self[name] = value
+			object.__setattr__(self, name, value)
+		# time.sleep(.1)
+
+	def __getattr__(self, name, loop=True):
+		# print("getttt")
+		if "str" not in str(type(name)):
+			name = str(name)
+		#### return name
+		if name == "value":
+			# self[name] = Expando(id=self._id+"/"+name, parent=self)
+			return self[name]
+
+		# print(" ", name, name in self, ":::::::",
+		    #   dict(self), ":::::::", self.__dict__)
+ 
+		# print(name in self.__dict__, name in self)
+		# if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr and name not in self.__dict__:
+		if not name.startswith("_") and name not in dict(self) and name not in Expando._hiddenAttr:
+			pass  # print("OOOOO_ooooooooooooooooooooo",name)####,self.__dict__)
+			print("aaaaaaaaaaaaaa", name, dict(self))
+			# print("ppp66666",self)
+			# self[name] = obj(id = self._id+"/"+name, parent = self)
+			self[name] = Expando(id=self._id+"/"+name, parent=self)
+			return self[name]
+		if name in self:
+			# atr = object.__getattribute__(self, name)
+			atr = self[name]
+
+			# print("bbbbbbbbbbbbbbb", name, atr, type(atr))
+
+			return atr
+		print("!!!!!!!!!!!!!!!", name)
+		return self[name]
+
+
+	# def __repr__(self) -> str:
+	# 	return super().__repr__()
+	def __repr__(self):
+		if Expando._valueArg in self:
+			return self[Expando._valueArg].__repr__()
+		return super().__repr__()
+
+	def __str__(self):
+		if Expando._valueArg in self:
+			return self[Expando._valueArg].__str__()
+		return super().__repr__()
+		
 
 # xo = Expando()
 
@@ -1190,7 +1389,7 @@ if __name__ == "__xmain__":
 
 	xo.a = 3
 	xo.ff = lambda x: print(x.a,f"!!!!!!!{x}")
-	ff = xo.ff._val
+	ff = xo.ff[Expando._valueArg]
 	# inspect.getsource(ff)
 	getsource(ff)
 	for c in ff.__code__.__dir__():
@@ -1246,5 +1445,5 @@ if __name__ == "__xmain__":
 # inspect.getsource(function)
 
 
-#xo.f = lambda : xo.self.name.first._val + "," + xo.self.name.last._val
+#xo.f = lambda : xo.self.name.first[Expando._valueArg] + "," + xo.self.name.last[Expando._valueArg]
 #
