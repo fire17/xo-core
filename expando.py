@@ -1,12 +1,18 @@
 #expando.py
 from datetime import datetime
 from multiprocessing import current_process
+from nis import match
+from operator import ne
+import importlib
+# importlib.reload(module)
 import time
 import os
 import re
+import json
 # import inspect
 
 from dill.source import getsource
+import dill
 
 # class Expando(object):
 # 	"""docstring for SelfNamed."""
@@ -27,26 +33,39 @@ from dill.source import getsource
 # 	def __assign__(self, v):
 # 		pass #print('called with %s' % v)
 
-class compareable(object):
-	pass
 
 
 # TODO: improve
-def getWatchablesForFormulaMock(func):
-	return ["name.first","name.last"]
+# def getWatchablesForFormulaMock(func):
+# 	return ["name.first","name.last"]
 def getWatchablesForFormula(func):
-	return getWatchablesForFormulaMock(func)
+	return getAllObjects(getsource(dill.detect.code(func)))
 	reg = r"\b((?:https?://)?(?:(?:www\.)?(?:[\da-z\.-]+)\.(?:[a-z]{2,6})|(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?:(?::[0-9a-fA-F]{1,4}){1,6})|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(?::[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(?:ffff(?::0{1,4}){0,1}:){0,1}(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])|(?:[0-9a-fA-F]{1,4}:){1,4}:(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])))(?::[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])?(?:/[\w\.-]*)*/?)\b"
 	return re.search(reg, getsource(func)).groups()
 
 
+def getAllObjects(given):
+    given = given.split('<<=')[-1]
+    regex = re.compile(r'(?P<xo>xo(\.\w+)*)')
+    # regex = re.compile(r'(?P<name>xo.name\.[a-zA-Z]+)')
+    # regex = re.compile(r'\\w+(?:\\.\\w+)+')
+
+    def removeHiddenAtEnd(s):
+        end = s.split('.')[-1]
+        if not end.startswith('_'):
+            return s
+        else:
+            return removeHiddenAtEnd('.'.join(s.split('.')[:-1]))
+
+    return [removeHiddenAtEnd(x[0].lstrip("xo.")) for x in re.findall(regex, given)]
 
 
-class Expando(compareable):
+
+
+class Expando(object):
 	"""docstring for Expando."""
-
 	_hiddenAttr = ["value", "_val", "getattr", "show", "_id", "__dict__"]
-	_rootName = "_root_"
+	_rootName = "xo"
 
 	__id = "xxx"
 
@@ -147,6 +166,9 @@ class Expando(compareable):
 				childs[a]=self[a]
 		return childs
 
+	def reloadImport(self, module):
+		return importlib.reload(module)
+		
 	def __init__(self, val = None, id = None, main = True, parent = None, **entries):####, wrapper = False, main = True):
 	####expando.py
 		#### def __init__(self):
@@ -169,6 +191,9 @@ class Expando(compareable):
 		# # print("........ddd")
 
 		# self.__id = id
+		self._isRoot = False
+		if parent is None:
+			self._isRoot = True
 		self._parent = parent
 		#### self.__validID_ = False
 		#### global GD
@@ -207,6 +232,7 @@ class Expando(compareable):
 #		# global manager
 # 		# self._manager = manager
 # 		# self._val = manager.bind(self.__id, val, ref=[self])
+	
 
 
 	def __hash__(self):
@@ -350,6 +376,7 @@ class Expando(compareable):
 
 	def _setValue(self, val):
 		self._val = val
+		self._updateSubscribers_(val)
 
 	def __getstate__(self):
 		pass #print ("I'm being pickled")
@@ -370,11 +397,13 @@ class Expando(compareable):
 		# print(f"!!!!!!! {self._name}")
 		if self._val is not None:
 			if "formula" in self and True:  # TODO: check valid formula
-				# print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
+				print("iiiiiiiiiiiiiiiiiiiiiiiiiiistr",self._lastLoaded,self._lastUpdated)
+				if self._lastLoaded == self._lastUpdated:
+					return str(self._val)
 				return str(self._runFormula())
 			return str(self._val)
 		# [:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
-		return "{xobject "+str({str(self._id.replace("/", ".")): self._val}
+		return "{xobject "+str({str(self._id.replace("/", ".")): str(self._val)}
                          )[1:-1]+f" ::: children({len(self.children())})"
 		# return "{xobject "+str({str(self._name):self._val[0]})[1:]#[:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
 		# return str({"_val":self._val})
@@ -388,15 +417,17 @@ class Expando(compareable):
 			print()
 		# print("where are we ?")
 		recursiveDict = False
-		if self._val is None:
-			self._setValue([[]])
-		if "function" in str(type(self._val)):
-			return str(self._val())
-		if "formula" in self and True:  # TODO: check valid formula
-			print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
-			return str(self._runFormula())
+		if self._val is not None:
+			# self._setValue([[]])
+			if "function" in str(type(self._val)):
+				return str(self._val())
+			if "formula" in self and True:  # TODO:`` check valid formula
+				print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
+				if self._lastLoaded == self._lastUpdated:
+					return str(self._val)
+				return str(self._runFormula())
 		# ret = "{xobject "+str({str(self._name):self._val[0]})[1:-1]+f" ::: children({len(self.children())})"
-		ret = "{xobject "+str({str(self._id.replace("/",".")): self._val}
+		ret = "{xobject "+str({str(self._id.replace("/",".")): str(self._val)}
 		                      )[1:-1]+f" ::: children({len(self.children())})"
 		childs = []
 		if self.children() is not None and len(self.children()) > 0:
@@ -410,41 +441,46 @@ class Expando(compareable):
 		ret += "}"
 		return ret
 
+	def __name__(self):
+		return str(self.__id.replace("/","."))
+
+	def _getRoot(self):
+		return self if self._isRoot else self._parent._getRoot()
+	# def _getRoot(self):
+	# 	return self if "None" in str(type(self._parent)) else self._parent._getRoot()
 
 
-
-	def GetXO(self, get="", allow_creation=False, getValue=False, follow=None):
-		print("GGGGGGGGGGGGGGGGG", get, getValue)
-		if "None" not in str(type(self._parent)):
-			get = ".".join(self._id.replace("/",".").split(".")[1:] + get.split("."))
-			def root(xobject):
-				return xobject if "None" in str(type(xobject._parent)) else root(xobject._parent)
-
-			return root(self).GetXO(get, allow_creation, getValue, follow)
+	def _GetXO(self, get="", allow_creation=False, getValue=False, follow=None):
+		# print("GGGGGGGGGGGGGGGGGetXO", self._id, get, getValue)
+		# if "None" not in str(type(self._parent)):
+		if not self._isRoot:
+			# get = ".".join(self._id.replace("/",".").split(".")[1:] + get.split("."))
+			return self._getRoot()._GetXO(get, allow_creation, getValue, follow)
+		# print(";;@;;;;;",self._id, get)
 		
 		final = self
-		print("FFFFFFFFFFFFFFF")
-		print("FFFFFFFFFFFFFFF")
-		print("FFFFFFFFFFFFFFF")
-		print(final, final._id)
+		# print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
+		# print(final, final._id)
 		for child in get.split("."):
 			final = final[child]
-		print(final,final._id)
-		print("FFFFFFFFFFFFFFF")
-		print("FFFFFFFFFFFFFFF")
-		print("FFFFFFFFFFFFFFF")
+		# print(final,final._id)
+		# print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
 		return final
 
 	def GetXOx(self, get="", allow_creation=False, getValue=False, follow=None):
-		print("GGGGGGGGGGGGGGGGG", get, getValue)
+		# print("GGGGGGGGGGGGGGGGG", get, getValue)
 		if "None" not in str(type(self._parent)):
 			get = ".".join(self._id.replace("/",".").split(".")[1:] + get.split("."))
 			def root(xobject):
 				return xobject if "None" in str(type(xobject._parent)) else root(xobject._parent)
 
-			return root(self).GetXO(get, allow_creation, getValue, follow)
+			return root(self)._GetXO(get, allow_creation, getValue, follow)
 		# get = ".".join(".".join(self._id.replace("/",".").split(".")[1:] + get.split(".")).split(".")[1:])
-		print("XXXXXXXXXXXXXXXXXXXX",get, self._id, self,)
+		# print("XXXXXXXXXXXXXXXXXXXX",get, self._id, self,)
 		if "str" not in str(type(get)):
 			print(self._id, "Please provide a string as a key", get)
 			return None
@@ -455,8 +491,8 @@ class Expando(compareable):
 		if follow is None:
 			if len(first) > 0:
 				if allow_creation or True:
-					print("FIRST",first)
-					return self.GetXO(get=".".join(sp[1:]), allow_creation=allow_creation, follow=xo[first], getValue=getValue)
+					# print("FIRST",first)
+					return self._GetXO(get=".".join(sp[1:]), allow_creation=allow_creation, follow=xo[first], getValue=getValue)
 			return None
 
 		# print(c,c,c,c,c,c,c,c,c,c);c+=1
@@ -477,7 +513,7 @@ class Expando(compareable):
 			return follow
 		else:
 			if allow_creation or first in follow.children():
-				return self.GetXO(get=".".join(sp[1:]), allow_creation=allow_creation, follow=follow[first], getValue=getValue)
+				return self._GetXO(get=".".join(sp[1:]), allow_creation=allow_creation, follow=follow[first], getValue=getValue)
 
 		return None
 
@@ -501,15 +537,15 @@ class Expando(compareable):
 	# def subscribe(self, func = None, autoPub = None, block = False, once= False, echo=True, debug = False, withID = False):
 	# , autoPub = None, block = False, once= False, echo=True, debug = False, withID = False):
 	def subscribe(self, funcOrXo=None):
-		print(" ::: Subscribing to ",self._name)
+		print(" ::: Subscribing to",self._name)
 		# print("SSSSSSSSSSSSSSS",self, funcOrXo)
 		if funcOrXo is None:
-			print("XxxxxxX")
+			# print("XxxxxxX")
 			funcOrXo = lambda a, *aa, **aaa: [a, aa, aaa]
 			# withID = True
 		# else:
 		# print("ffffffffff", funcOrXo)
-		if funcOrXo not in self._subscribers:
+		if funcOrXo not in self._subscribers and funcOrXo not in self._subscribers:
 			self._subscribers.append(funcOrXo)
 			# if "function" in str(type(funcOrXo)):
 			# 	self._triggers.append(funcOrXo)
@@ -534,38 +570,43 @@ class Expando(compareable):
 	def _runFormula(self):
 		if True or "formula" in self:
 			if self._lastUpdated == self._lastLoaded:
-				return self.formula.currentValue
+				return self._val
+				# return self.formula.currentValue
 			else:
 				# formula = self.formula._val
 				# newValue = formula()
 				newValue = self.formula()
-				self.formula.currentValue = newValue
+				# self.formula.currentValue = newValue
 				# self._val = newValue
 				# self = newValue
 				self._lastLoaded = self._lastUpdated
 				# print("xxxxxxxx", self, formula, getsource(formula))
-				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				self._updateSubscribers_(newValue)
+				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				self._setValue(newValue)
+				# print("=========-",newValue)
+				
 				return newValue
 		return None
 
 	# xo.form <<= Formula
 	def __ilshift__(self, formula):
-		print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-		self._lastLoaded = time.time()
-		self._lastUpdated = time.time()
-		print(formula)
+		# print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+		# print(formula)
 		self.formula = formula
+		self._lastLoaded = time.time()
+		self._lastUpdated = time.time() # not matching same time on purpose -> will trigger fetch
 		# self.currentValue = formula()
 		# self._val = currentValue
 		# print("@@@@@@@@@ expando?",type(self))
 
+		# self._setValue(lambda : self._runFormula())
+		# self()
+		
+
 		# self._val = lambda : self._runFormula()
-		self._setValue(lambda : self._runFormula())
-		self()
 		# self.formula = lambda : self._parent() 
 		# self._val = lambda : self._parent() if self._lastUpdated == self._lastLoaded else runFormula(self.formula)
 		# setValue(self, currentValue)
@@ -573,7 +614,7 @@ class Expando(compareable):
 
 		
 		def setLastUpdated(xobject):
-			print("!!!! UUUUUUUUUUUUUUUU", xobject)
+			# print("!!!! UUUUUUUUUUUUUUUU", xobject)
 			xobject._lastUpdated = time.time()
 			if xobject._subscribers != None and len(xobject._subscribers) > 0:
 				xobject()
@@ -589,11 +630,13 @@ class Expando(compareable):
 			# 	else:
 			# 		return xobj[path]
 			# xobject = getLast(xo,key)
-			print("LLLLLLLLLLLLLLL",key)
-			xobject = xo.GetXO(key)
-			print("LLLLLLLL",xobject._id,":::::",xobject)
+			# print("LLLLLLLLLLLLLLL",key)
+			
+			xobject = self._GetXO(key)
+			# print("LLLLLLLL",xobject._id,":::::",xobject)
 			
 			xobject @= lambda *args,**kw:  setLastUpdated(self),  # self._lastUpdated = time.time()
+		self._runFormula()
 		return self
 		# return self
 
@@ -636,6 +679,8 @@ class Expando(compareable):
 
 	#### by value of main
 	def __eq__(self, other):
+		if type(self._val) is not list:
+			return None == other
 		if "bool" in str(type(other)) and ("bool" in str(type(self._val)) or (self._val is not None and ("dict" in str(type(self._val[0])) or "dict" in str(type(self._val[0])) )and len(self._val) > 0 and "bool" in str(type(self._val[0])))):
 			return self._val[0] == other
 		if self.__isObj(other):
@@ -672,24 +717,33 @@ class Expando(compareable):
 	def __add__(self, other):
 		if self._val is None:
 			return other
-		if str(type(other)) != str(type(self._val[0])):
-			if "list" not in str(type(other)):
-				other = [other]
-			if "list" not in str(type(self._val[0])):
-				self._val[0] = [self._val[0]]
-			return self._val[0] + other
-		return type(other)(self._val) + other
+		matchWith = other
+		if self.__isObj(other):
+			matchWith = other._val
+			# print("$$$$$$$$$$$$$$$$$$$$$$1")
+			# return self._val + other._val
+		# if str(type(other)) != str(type(self._val[0])):
+		# 	if "list" not in str(type(other)):
+		# 		other = [other]
+		# 	if "list" not in str(type(self._val[0])):
+		# 		self._val[0] = [self._val[0]]
+		# 	return self._val[0] + other
+		return type(matchWith)(self._val) + matchWith
 
 	def __radd__(self, other):
 		if self._val is None:
 			return other
-		if str(type(other)) != str(type(self._val[0])):
-			if "list" not in str(type(other)):
-				other = [other]
-			if "list" not in str(type(self._val[0])):
-				self._val[0] = [self._val[0]]
-			return other + self._val[0]
-		return other + type(other)(self._val)
+		matchWith = other
+		if self.__isObj(other):
+			print("$$$$$$$$$$$$$$$$$$$$$$2")
+			matchWith = other._val
+		# if str(type(other)) != str(type(self._val[0])):
+		# 	if "list" not in str(type(other)):
+		# 		other = [other]
+		# 	if "list" not in str(type(self._val[0])):
+		# 		self._val[0] = [self._val[0]]
+		# 	return other + self._val[0]
+		return matchWith + type(matchWith)(self._val)
 
 	def __pos__(self, other):
 		#### # print("!!!!!!!!!")
@@ -864,7 +918,7 @@ class Expando(compareable):
 					appendToLearn.append(f)
 
 
-			selff = xo.GetXO(self._id)
+			# selff = xo._GetXO(self._id)
 
 			# print( f"Learning new trick {self}{str(self._id+" ").split(" ")[1] } yo")
 			owner = "/".join(self._id.split("/")[:-1])+"/"
@@ -889,7 +943,7 @@ class Expando(compareable):
 					self.value(ref=True).append(a)
 				print( f" ::: New Element xo.{owner.strip('/')}.learned = {a}")
 
-			return xo.GetXO(owner)
+			return self._GetXO(owner)
 			# print(vars)
 			# print(".....")
 			# print(kwargs)
@@ -901,6 +955,13 @@ class Expando(compareable):
 		if "function" in str(type(self._val)):
 			# print("!!!!!!!!!!#####",str(type(self._val)))
 			return self._val(*vars, **kwargs )
+		if "formula" in self and True:  # TODO: check valid formula
+			# print("ccccccccccccccccccccccccall",self._lastLoaded, self._lastUpdated)
+			if self._lastLoaded == self._lastUpdated:
+				# print("@@@@@@@")
+				return self._val
+			# print("+++++++",self._id)
+			return self._runFormula()
 		elif self._val is not None and len(self._val)>0 and "function" in str(type(self._val[0])):
 			# print("!!!!!!!!!![0]")
 			if "asyn" in kwargs and kwargs["asyn"] == True:
@@ -1089,7 +1150,7 @@ class Expando(compareable):
 		return self._val[0]
 
 
-xo = Expando()
+# xo = Expando()
 
 # 	def __setattr__(self, name, value):
 # 		pass  # print("EEEEEEEEEEEEEEEEEEEE000")
@@ -1110,7 +1171,7 @@ xo = Expando()
 # input = "some sentence xo.url.address "
 # regex to get url from input
 
-if __name__ == "__main__":
+if __name__ == "__xmain__":
 	# 	print("ssssssssssssssss..............")
 	# 	s = child(val= "ssssssssssssssss", id= "ssssssssssssssss")
 	# 	s.show()
