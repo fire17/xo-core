@@ -39,7 +39,13 @@ import dill
 # def getWatchablesForFormulaMock(func):
 # 	return ["name.first","name.last"]
 def getWatchablesForFormula(func):
-	return getAllObjects(getsource(dill.detect.code(func)))
+	try:
+		# dill.detect.code(func)
+		return getAllObjects(getsource(dill.detect.code(func)))
+	except:
+		return getAllObjects(getsource(func))
+	#TODO: fix for lambda in interpreter
+		
 	reg = r"\b((?:https?://)?(?:(?:www\.)?(?:[\da-z\.-]+)\.(?:[a-z]{2,6})|(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?:(?::[0-9a-fA-F]{1,4}){1,6})|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(?::[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(?:ffff(?::0{1,4}){0,1}:){0,1}(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])|(?:[0-9a-fA-F]{1,4}:){1,4}:(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])))(?::[0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])?(?:/[\w\.-]*)*/?)\b"
 	return re.search(reg, getsource(func)).groups()
 
@@ -397,7 +403,7 @@ class Expando(object):
 		# print(f"!!!!!!! {self._name}")
 		if self._val is not None:
 			if "formula" in self and True:  # TODO: check valid formula
-				print("iiiiiiiiiiiiiiiiiiiiiiiiiiistr",self._lastLoaded,self._lastUpdated)
+				# print("iiiiiiiiiiiiiiiiiiiiiiiiiiistr",self._lastLoaded,self._lastUpdated)
 				if self._lastLoaded == self._lastUpdated:
 					return str(self._val)
 				return str(self._runFormula())
@@ -422,7 +428,7 @@ class Expando(object):
 			if "function" in str(type(self._val)):
 				return str(self._val())
 			if "formula" in self and True:  # TODO:`` check valid formula
-				print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
+				# print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
 				if self._lastLoaded == self._lastUpdated:
 					return str(self._val)
 				return str(self._runFormula())
