@@ -9,6 +9,7 @@ import time
 import os
 import re
 import json
+from typing import OrderedDict
 # import inspect
 
 from dill.source import getsource
@@ -68,7 +69,8 @@ def getAllObjects(given):
 
 
 
-class Expando(dict):
+# class Expando(dict):
+class Expando(OrderedDict):
 	"""docstring for Expando."""
 	_hiddenAttr = ["value", "_val", "getattr", "show", "_id", "__dict__"]
 	_rootName = "xo"
@@ -290,8 +292,8 @@ class Expando(dict):
 	# 		pass ## print("555555555")
 	# 		self.__dict__[name] = value
 
-	def keys(self):
-		return self.keys()
+	# def keys(self):
+	# 	return self.keys()
 
 	def __xgetitem__(self, name):
 		print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
@@ -305,7 +307,7 @@ class Expando(dict):
 
 		if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr and name not in self.__dict__:
 			# print("ppp44444")
-			self.__dict__[name] = Expando(id = self._id+"/"+name, parent = self)
+			self.__dict__[name] = Expando(_id = self._id+"/"+name, _parent = self)
 
 		if name in self.__dict__:
 			#### print("FUUCKKKKKKKKKKKKKKKKKKKKKk")
@@ -333,7 +335,7 @@ class Expando(dict):
 				if name not in self.__dict__:
 					pass #print("1",name)
 					# print("ppp5555",self)
-					self.__dict__[name] = Expando(id = self._id+"/"+name, val = value, parent = self)
+					self.__dict__[name] = Expando(_id = self._id+"/"+name, _val = value, _parent = self)
 				else:
 					pass #print("2",name)
 					self[name].set(value)
@@ -732,6 +734,7 @@ class Expando(dict):
 	# 	print("$$$$$$$$$$$$$$$$$$$$$$")
 	# 	return self[Expando._valueArg]
 	def __ge__(self, other):
+		# TODO: Check if "value" in 
 		if type(other) is Expando:
 			return self[Expando._valueArg] >= other[Expando._valueArg]
 		return self[Expando._valueArg] >= other
@@ -936,7 +939,7 @@ class Expando(dict):
 		sT.start()
 
 	def __call__(self, *vars, **kwargs):
-
+		
 		# for a in vars:
 		# 	print(type(a),"AAAAAAAAAAAAAAA,", a)
 		# for a in kwargs:
@@ -962,7 +965,6 @@ class Expando(dict):
 				else:
 					appendToLearn.append(f)
 
-
 			# selff = xo._GetXO(self._id)
 
 			# print( f"Learning new trick {self}{str(self._id+" ").split(" ")[1] } yo")
@@ -972,21 +974,21 @@ class Expando(dict):
 				# print(owner,",,,",key)
 				v = newDict[key]
 				if "function" in str(type(v)):
-					print( f" ::: Learning new trick {owner.strip('/')}.{key} :D")
-				else: #"function" in str(type(v)):
+					print(f" ::: Learning new trick {owner.strip('/')}.{key} :D")
+				else:  # "function" in str(type(v)):
 					# print( f" ::: New Element xo.{self._id.replace('/','.')}.{	key} = {v}")
-					print( f" ::: New Element xo.{owner.strip('/')}.{	key} = {v}")
-				self._parent[key] = v
+					print(f" ::: New Element xo.{owner.strip('/')}.{	key} = {v}")
+				self._parent[key] = v # type:ignore
 				# print("SSSSSSSSSSSS",owner+key)
 
 				# print(xo.GetXO(owner)+key, v,retXO=True)
 			for a in appendToLearn:
 				if self._parent is not None:
-					self._parent.learned+=[a]
+					self._parent.learned += [a]
 				else:
 					print(" ::: WTF")
 					self[Expando._valueArg](ref=True).append(a)
-				print( f" ::: New Element xo.{owner.strip('/')}.learned = {a}")
+				print(f" ::: New Element xo.{owner.strip('/')}.learned = {a}")
 
 			return self._GetXO(owner)
 			# print(vars)
@@ -997,9 +999,11 @@ class Expando(dict):
 		# 	print(v)
 		retXO = False
 		# if "function" in str(type(self[Expando._valueArg])) or "method" in str(type(self[Expando._valueArg])):
-		if "function" in str(type(self[Expando._valueArg])):
+		# print()
+
+		if "value" in self and "function" in str(type(self[Expando._valueArg])):
 			# print("!!!!!!!!!!#####",str(type(self[Expando._valueArg])))
-			return self[Expando._valueArg](*vars, **kwargs )
+			return self[Expando._valueArg](*vars, **kwargs)
 		if "formula" in self and True:  # TODO: check valid formula
 			# print("ccccccccccccccccccccccccall",self._lastLoaded, self._lastUpdated)
 			if self._lastLoaded == self._lastUpdated:
@@ -1007,7 +1011,7 @@ class Expando(dict):
 				return self[Expando._valueArg]
 			# print("+++++++",self._id)
 			return self._runFormula()
-		elif self[Expando._valueArg] is not None and len(self[Expando._valueArg])>0 and "function" in str(type(self[Expando._valueArg])):
+		elif "value" in self and self[Expando._valueArg] is not None and len(self[Expando._valueArg]) > 0 and "function" in str(type(self[Expando._valueArg])):
 			# print("!!!!!!!!!![0]")
 			if "asyn" in kwargs and kwargs["asyn"] == True:
 				xkwargs = {}
@@ -1027,30 +1031,108 @@ class Expando(dict):
 				self[Expando._valueArg](*vars, **kwargs)
 				return self
 
-
 		# print(" XXX CCC",self._id, self[Expando._valueArg])
 		if not retXO:
-			if self[Expando._valueArg] is not None and ("ref" not in kwargs or kwargs["ref"] is not True):
+			if "value" in self and self[Expando._valueArg] is not None and ("ref" not in kwargs or kwargs["ref"] is not True):
 				if "list" in str(type(self[Expando._valueArg])) and len(self[Expando._valueArg]) == 1:
 					return self[Expando._valueArg]
-			return self[Expando._valueArg]
+			print(self._id, ":::x:::", vars, ":::", kwargs)
+			if "value" in self:
+				return self[Expando._valueArg]
 			# return self[Expando._valueArg][0](*vars, **kwargs)
-		else:
-			return self[Expando._valueArg]
+		elif "value" in self:
+			return self[Expando._valueArg] if "value" in self else None
 			# self[Expando._valueArg][0](*vars, **kwargs)
 			# return self
-		# print(":::::::::::::::::::::::")
+		print(":::::::::::::::::::::::", self.keys(), len(self.keys()))
+		newData = {}
+		print(";;;;;;;;;;;;;:::", vars)
+		for d in vars:
+			if "dict" in str(type(d)):
+				print(";;;;;;;;;;;;;", d)
+				newData = {**d, **newData}
+		newData = {**kwargs, **newData,**self}
+		if (len(self.keys()) == 0):
+			ddd = None
+			if Expando._valueArg in kwargs:
+				ddd = Expando.__init__(self, _id=self._id, _parent = self._parent, **newData)
+			else:
+				print(kwargs,vars)
+				# ddd = Expando.__init__(self,val = self.value if "value" in self else None, 
+                #                     id=self._id, parent=self._parent, **newData)
+				print("@@@@@@")
+				print(newData)
+				print("@@@@@@@@")
+				print(".............",self.id, newData["id"] if "id" in newData else "")
+				ddd = Expando.__init__(self,_id=self._id,_val = self.value if "value" in self else None, 
+                                   _parent=self._parent, **newData)
+			# ddd =  dict.__init__(self, *vars,**kwargs)
+			print("DDDDDDDDD", ddd, type(ddd))
+			# self._convertAll()
+			return ddd
+		# Update new entries
+		# TODO: make this work, update
 
+		print("xxxxxx", vars[0], kwargs)
+		# for k in dict(vars[0]):
+		# 	print("......",k,vars[0][k])
+		# 	self[k] = vars[0][k]
+		print("-------", dict(self), type(vars[0]))
+		
+		self.update(newData) #working
 
+		#self.__init__(**{**dict(self), **kwargs})
+		# for
+
+		return self
+
+		# Add the new attributes to the instance's dictionary.
+		for k, v in kwargs:
+			self[k] = v
+
+		return self._id
+		# return self.update({**dict(self), **kwargs})
+
+	def update(self, *vars, **kwargs):
+		newData = {}
+		print(";;;;;;;;;;;;;:::", vars, kwargs)
+		for d in vars:
+			if "dict" in str(type(d)):
+				print(";;;;;;;;;;;;;", d)
+				newData = {**d, **newData}
+		newData = {**kwargs, **newData}
+		for key in newData:
+			if isinstance(newData[key],dict):
+				print("DDDDDDDD",key)
+				val = None
+				if "value" in newData[key]:
+					val = newData[key].pop("value")
+				self[key] = Expando(_id=self._id+"/"+key, _val=val, _parent=self, **newData[key])
+			else:
+				# print("DDDDDDDD",key)
+				print("NNNNNNDDDDDDDD",key)
+				val = newData[key]
+				self[key] = Expando(_id=self._id+"/"+key, _val=val, _parent=self)
+		########## self.update(newData)
 
 	def show(self,t = "    ",count = 0, inLoop = False, ret = False):
-		#### print("ssssssssssssssss..............")
+		# print("ssssssssssssssss..............",self._id)
 		s = ""
 		#### print("///////////",self[Expando._valueArg],type(self[Expando._valueArg]))
-
-		if "str" in str(type(self[Expando._valueArg])):
-			s = "\'"
-		p = self._id.split("/")[-1] +" = "+ s+str(self[Expando._valueArg])+s
+		p = ""
+		val = ""
+		if "value" in self:
+			# print("1111111")
+			if "str" in str(type(self[Expando._valueArg])):
+				# print("11111112")
+				s = "\'"
+			val = str(self[Expando._valueArg])
+		# else:
+			# print("00000000000000")
+			# print("00000000000000",self._id)
+			# print("00000000000000")
+		finalval = " = " + s+str(val)+s if val is not None or True else ""
+		p = self._id.split("/")[-1] +finalval
 		tab = ""
 		for i in range(count):
 			tab+=t
@@ -1059,24 +1141,37 @@ class Expando(dict):
 		res = []
 		p = tab+p
 		if ret:
+			# print("22222221")
 			retList.append(p)
 		else:
+			# print("22222222")
 			print(p.replace("\t","    "))
 		for a in self:
+			# print("33333", a, type(self[a]))
 			# if "_" not in a:
 			if not a.startswith("_"):
-				if "Expando" in str(type(self[a])):
+				if "Expando" in str(type(self[a])) or "dict" in str(type(self[a])):
+					# print("33334",a)
 					if ret:
+						# print("33335555",a)
 						res = self[a].show(count= count+1, ret = ret)
 					else:
+						# print("3333466666",a)
 						self[a].show(count= count+1, ret = ret)
+			# else:
+			# 	print("33337",a)
 		if count == 0 and inLoop:
 			print("\n\nPress Ctrl+C to stop whileShow()\n")
 
 		if ret:
+			# print("444444444")
 			if count == 0:
+				# print("4444444445")
 				return str(retList + res)
+			# print("55555555",count)
 			return retList +["\n"]+ res
+		# print("777777",ret,count,retList,res,)
+		return dict(self)
 
 	def show0(self,t = "    ",count = 0, inLoop = False):
 		#### print("ssssssssssssssss..............")
@@ -1194,22 +1289,24 @@ class Expando(dict):
 	# 		return self[Expando._valueArg]
 	# 	return self[Expando._valueArg]
 
-	def __init__(self, val=None, id=None, main=True, parent=None, **entries):
+	def __init__(self, _val=None, _id=None, _parent=None,*vars, **entries):
+		# dict.__init__(self,**entries)
+		# dict.__init__(self, *vars, **entries) #
+		super().__init__(self, *vars, **entries)
 		####expando.py
 		#### def __init__(self):
 		#### es=traceback.extract_stack()
 		# super().__init__(id = id, val = val)
-		if id is None:
-			id = Expando._rootName
+		if _id is None:
+			_id = Expando._rootName
 		# super().__init__(*(None, val))
 		# super().__init__(val)
 		# super().__init__()
 		pass  # print("PPPPPPPPPPPPPP", id)
 		#### self.name = self.GetName()
 
-		self.update(entries)
-		self._name = id.split("/")[-1]
-		self._id = id
+		self._name = _id.split("/")[-1]
+		self._id = _id
 		# self._birth = datetime.now()
 
 		# self.__id = id
@@ -1219,9 +1316,10 @@ class Expando(dict):
 
 		# self.__id = id
 		self._isRoot = False
-		if parent is None:
+		if _parent is None:
 			self._isRoot = True
-		self._parent = parent
+		# self._parent:Expando = Expando(**parent)
+		self._parent= _parent
 		#### self.__validID_ = False
 		#### global GD
 		#### self.xxx = self.get_my_name()
@@ -1240,22 +1338,23 @@ class Expando(dict):
 		# self.__id__ = "hidden"
 		# self.__dict__.pop("__id__")
 		# self[Expando._valueArg] = val
-		if val is not None:
+		if _val is not None:
 			# self[Expando._valueArg] = val
-			self[Expando._valueArg] = val
+			self[Expando._valueArg] = _val
 		# self.__dict__["val"] = 3
 		# print("obj created! =",self[Expando._valueArg])
 		self._zzz = 5
 		#### print("******---",self.get_my_name())
 		#### self["_id"] = self.get_my_name()[0]
+		self.update(entries)
 
 		#### self.xxx.yyy.zzz = 13
 		#### updateID = Thread(target = self.makeID, args = [list,])
 		#### updateID.start()
 
 		# print("AAAAAAAAAAA	AAA",entries,self.__name__)
-		for arg_name in entries:
-			pass  # print("AAAAAAAAAAAAA",arg_name)
+		# for arg_name in entries:
+		# 	pass  # print("AAAAAAAAAAAAA",arg_name)
 
 
 # 		# Binding the object to the value
@@ -1283,7 +1382,7 @@ class Expando(dict):
 					else:
 						print("........")
 						#final .x =
-						res = Expando(id=self._id+"/"+name, val=value, parent=self)
+						res = Expando(_id=self._id+"/"+name, _val=value, _parent=self)
 						self[name] = res
 						object.__setattr__(self, name, res)
 				else:
@@ -1304,7 +1403,7 @@ class Expando(dict):
 
 
 		else:
-			print("555555555", name)
+			# print("555555555", name)
 			# self.__dict__[name] = value
 			# self[name] = value
 			object.__setattr__(self, name, value)
@@ -1320,16 +1419,16 @@ class Expando(dict):
 			return self[name]
 
 		# print(" ", name, name in self, ":::::::",
-		    #   dict(self), ":::::::", self.__dict__)
+			#   dict(self), ":::::::", self.__dict__)
  
 		# print(name in self.__dict__, name in self)
 		# if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr and name not in self.__dict__:
 		if not name.startswith("_") and name not in dict(self) and name not in Expando._hiddenAttr:
 			pass  # print("OOOOO_ooooooooooooooooooooo",name)####,self.__dict__)
-			print("aaaaaaaaaaaaaa", name, dict(self))
+			# print("aaaaaaaaaaaaaa", name, dict(self))
 			# print("ppp66666",self)
 			# self[name] = obj(id = self._id+"/"+name, parent = self)
-			self[name] = Expando(id=self._id+"/"+name, parent=self)
+			self[name] = Expando(_id=self._id+"/"+name, _parent=self)
 			return self[name]
 		if name in self:
 			# atr = object.__getattribute__(self, name)
@@ -1345,15 +1444,42 @@ class Expando(dict):
 	# def __repr__(self) -> str:
 	# 	return super().__repr__()
 	def __repr__(self):
-		if Expando._valueArg in self:
+		# TODO and no other attributes
+		print("!!!!!!!!!!!!!!!", )
+		if Expando._valueArg in self and len(self) == 1:
 			return self[Expando._valueArg].__repr__()
-		return super().__repr__()
+		return str(dict(self))
+		# return super().__repr__()
 
 	def __str__(self):
-		if Expando._valueArg in self:
+		print("!!!!!!!!!!!!!!!2",)
+		if Expando._valueArg in self and len(self) == 1:
 			return self[Expando._valueArg].__str__()
+		return str(dict(self))
 		return super().__repr__()
-		
+
+	def default(self, o):
+		return dict(o)
+
+
+	@property
+	def __json__(self):
+		return dict(self)
+
+	def toJSON(self):
+		print("####################")
+		print("####################")
+		print("####################")
+		print("####################")
+		print("####################")
+		print("####################")
+		print("####################")
+		print(dict(self))
+		return json.dumps(self, default=lambda *a,**kv: dict(self))
+		# print(json.dumps(self, indent=4, default=lambda x: x.__json__))
+		print(json.dumps(self.__dict__))
+
+
 
 # xo = Expando()
 
