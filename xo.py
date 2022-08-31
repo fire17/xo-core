@@ -1,5 +1,7 @@
 # from expando import *
-import expando 
+# import expando 
+from expando import Expando as Expando
+
 # def reload(m = expando):
 # m = expando
 # importlib.reload(m)
@@ -8,7 +10,8 @@ import expando
 
 # reload()
 # xo = Expando()
-xo = expando.Expando()
+# xo = expando.Expando()
+xo = Expando()
 
 
 

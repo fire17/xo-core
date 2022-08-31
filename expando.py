@@ -1433,17 +1433,17 @@ class Expando(OrderedDict):
 # 		# self._manager = manager
 # 		# self[Expando._valueArg] = manager.bind(self.__id, val, ref=[self])
 
-	def __setattr__(self, name, value, *args, **kwargs):
+	def __setattr__(self, name, value, *args, **kwargs): # expect _skip_overload to be in kwargs
 		# print("sssasasaaaaaaaasaaaaaaaas", self._id, name, value,":::", args,":::", kwargs)
-		print(str(type(name)))
-		print()
+		# print(str(type(name)))
+		# print()
 		if "str" not in str(type(name)):
-			print("XXSXSXSXSXSXSXSXSX")
+			print("XXSXSXSXSXSXSXSXSX", type(name), name._id)
 			print("XXSXSXSXSXSXSXSXSX")
 			print("XXSXSXSXSXSXSXSXSX")
 			print("XXSXSXSXSXSXSXSXSX")
 			name = str(name)
-		print("st3")
+		# print("st3")
 		if name not in Expando._hiddenAttr and (not name.startswith("_") or name == Expando._valueArg):
 			if ("_skip_overload" not in kwargs or kwargs["_skip_overload"] == False) and name != "_behaviors":
 				# print("EEEEEEEEEEEEEEEEEEEE1", name, value)
