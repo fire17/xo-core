@@ -144,7 +144,7 @@ class xxo(dict):
 		# time.sleep(.1)
 
 	def __getattr__(self, name, loop=True):
-		print("getttt")
+		# print("getttt")	
 		if "str" not in str(type(name)):
 			name = str(name)
 		#### return name
@@ -152,7 +152,7 @@ class xxo(dict):
 			# self[name] = xxo(id=self._id+"/"+name, parent=self)
 			return self[name]
 
-		print(" ", name, name in self, ":::::::", dict(self), ":::::::" , self.__dict__)
+		# print(" ", name, name in self, ":::::::", dict(self), ":::::::" , self.__dict__)
 
 		print(name in self.__dict__, name in self)
 		# if not name.startswith("_") and "_val" in self.__dict__ and name not in xxo._hiddenAttr and name not in self.__dict__:
