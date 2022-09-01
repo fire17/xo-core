@@ -394,6 +394,7 @@ class Expando(OrderedDict):
 	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$xxxxxxxxxxxx")
 
 	def _setValue(self, val):
+		# print(self._id, " SETTING VALUE TO " + str(val))
 		self[Expando._valueArg] = val
 		object.__setattr__(self, "value", val)
 		# if name == Expando._valueArg:
@@ -406,6 +407,7 @@ class Expando(OrderedDict):
 		# 				object.__setattr__(self, name, Expando(
 		# 					id=self._id+"/"+name, val=value, parent=self))
 		self._updateSubscribers_(val)
+		print(self)
 
 	def __xgetstate__(self):
 		pass #print ("I'm being pickled")
@@ -505,16 +507,22 @@ class Expando(OrderedDict):
 		# print(";;@;;;;;",self._id, get)
 		
 		final = self
-		print("FFFFFFFFFFFFFFF")
-		print("FFFFFFFFFFFFFFF")
-		print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF",self._id)
 		print(final, final._id)
 		for child in get.split("."):
+			# print("tttccccchild, final",child, final._id)
+			if child not in final:
+				# final[child]
+				final[child] = Expando(_id=final._id+"/"+child,
+                          _parent=final, _behaviors=final._behaviors)
+			# else:
 			final = final[child]
 		# print(final,final._id)
-		print("FFFFFFFFFFFFFFF")
-		print("FFFFFFFFFFFFFFF")
-		print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
+		# print("FFFFFFFFFFFFFFF")
 		return final
 
 	def GetXOx(self, get="", allow_creation=False, getValue=False, follow=None):
@@ -606,7 +614,7 @@ class Expando(OrderedDict):
 	# lambda x: x@xo
 	def __matmul__(self, other):
 		print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
-		print("@@@@@@@@           @@@@@@@")
+		print("@@@@@@@@   matmul  @@@@@@@")
 		print("@@@@@@@@     x     @@@@@@@")
 		print("@@@@@@@@     x     @@@@@@@")
 		print("@@@@@@@@           @@@@@@@",type(other))
@@ -618,7 +626,7 @@ class Expando(OrderedDict):
 
 	def __rmatmul__(self, other):
 		print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
-		print("@@@@@@@@           @@@@@@@")
+		print("@@@@@@@@  imatmul  @@@@@@@")
 		print("@@@@@@@@           @@@@@@@")
 		print("@@@@@@@@           @@@@@@@")
 		print("@@@@@@@@           @@@@@@@",type(other))
@@ -656,10 +664,10 @@ class Expando(OrderedDict):
 				# self = newValue
 				self._lastLoaded = self._lastUpdated
 				# print("xxxxxxxx", self, formula, getsource(formula))
-				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
-				print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				print(" ::: RUNNING FORMULA ",self._id, ":::", newValue,":::")
+				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
+				# print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO", newValue)
 				self._setValue(newValue)
 				# print("=========-",newValue)
 				
@@ -695,7 +703,7 @@ class Expando(OrderedDict):
 				xobject()
 
 		keys = getWatchablesForFormula(formula)
-		print("keys",keys)
+		# print("keys",keys)
 		for key in keys:
 			#TODO: remove after xo[longKey] is working
 			# check = key 
@@ -1444,7 +1452,8 @@ class Expando(OrderedDict):
 			print("XXSXSXSXSXSXSXSXSX")
 			name = str(name)
 		# print("st3")
-		if name not in Expando._hiddenAttr and (not name.startswith("_") or name == Expando._valueArg):
+		# if name in self and name not in Expando._hiddenAttr and (not name.startswith("_") or name == Expando._valueArg):
+		if name in self and name not in Expando._hiddenAttr and not name.startswith("_"):
 			if ("_skip_overload" not in kwargs or kwargs["_skip_overload"] == False) and name != "_behaviors":
 				# print("EEEEEEEEEEEEEEEEEEEE1", name, value)
 				return self._behaviors[Expando.__setattr__](self, name, value, *args, **kwargs) \
