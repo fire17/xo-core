@@ -1,9 +1,10 @@
 #expando.py
-from datetime import datetime
-from multiprocessing import current_process
-from nis import match
-from operator import ne
+# from datetime import datetime
+# from multiprocessing import current_process
+# from nis import match
+# from operator import ne
 import importlib
+from threading import Thread
 # importlib.reload(module)
 import time
 import os
@@ -14,6 +15,7 @@ from typing import OrderedDict
 
 from dill.source import getsource
 import dill
+
 
 # class Expando(object):
 # 	"""docstring for SelfNamed."""
@@ -28,7 +30,7 @@ import dill
 # 		#### self.arg = arg
 
 # 	def __setattr__(self, name, value):
-# 		pass #printx("EEEEEEEEEEEEEEEEEEEE---1")
+# 		pass #printXx("EEEEEEEEEEEEEEEEEEEE---1")
 
 
 # 	def __assign__(self, v):
@@ -74,7 +76,7 @@ def getAllObjects(given):
 class Expando(OrderedDict):
 	"""docstring for Expando."""
 	_hiddenAttr = ["value", "_val", "getattr",
-                "show", "_id", "__dict__", "startswith"]
+				"show", "_id", "__dict__", "startswith"]
 	_rootName = "xo"
 	_valueArg = "value"
 
@@ -296,6 +298,11 @@ class Expando(OrderedDict):
 	# 		self.__dict__[name] = value
 
 	# def keys(self):
+	# 	print("keysssss",self._id)
+	# 	res = [*super().keys()]
+	# 	if self[Expando._valueArg] is None:
+	# 		res.remove(Expando._valueArg)
+	# 	return res
 	# 	return self.keys()
 
 	def __xgetitem__(self, name):
@@ -311,7 +318,7 @@ class Expando(OrderedDict):
 		if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr and name not in self.__dict__:
 			# print("ppp44444")
 			#EX1
-			self.__dict__[name] = Expando(_id = self._id+"/"+name, _parent = self, _behaviors=self._behaviors)
+			self.__dict__[name] = self._xoT_(_id = self._id+"/"+name, _parent = self, _behaviors=self._behaviors)
 
 		if name in self.__dict__:
 			#### print("FUUCKKKKKKKKKKKKKKKKKKKKKk")
@@ -340,7 +347,7 @@ class Expando(OrderedDict):
 					pass #print("1",name)
 					# print("ppp5555",self)
 					#EX2
-					self.__dict__[name] = Expando(_id = self._id+"/"+name, _val = value, _parent = self, _behaviors=self._behaviors)
+					self.__dict__[name] = self._xoT_(_id = self._id+"/"+name, _val = value, _parent = self, _behaviors=self._behaviors)
 				else:
 					pass #print("2",name)
 					self[name].set(value)
@@ -378,7 +385,7 @@ class Expando(OrderedDict):
 	# 		pass #print("aaaaaaaaaaaaaa")
 	# 		# print("ppp66666",self)
 	# 		# self[name] = obj(id = self._id+"/"+name, parent = self)
-	# 		self[name] = Expando(id = self._id+"/"+name, parent = self)
+	# 		self[name] = self._xoT(id = self._id+"/"+name, parent = self)
 	# 		return self[name] #?
 	# 	if name in self.__dict__:
 	# 		pass #print("bbbbbbbbbbbbbbb")
@@ -393,30 +400,32 @@ class Expando(OrderedDict):
 	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 	# 	pass #print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$xxxxxxxxxxxx")
 
-	def _setValue(self, val):
+	def _setValue(self, val, skipInner = False):
 		# print(self._id, " SETTING VALUE TO " + str(val))
-		self[Expando._valueArg] = val
-		object.__setattr__(self, "value", val)
-		# if name == Expando._valueArg:
-		# 				self[name] = value
-		# 				self[name] = value
-		# 			else:
-		# 				print("........")
-		# 				#final .x =
-		# 				self[name] = Expando(id=self._id+"/"+name, val=value, parent=self)
-		# 				object.__setattr__(self, name, Expando(
-		# 					id=self._id+"/"+name, val=value, parent=self))
-		self._updateSubscribers_(val)
-		print(self)
+		if skipInner or self.set(val):
+			# set hook
+			self[Expando._valueArg] = val
+			object.__setattr__(self, "value", val)
+			# if name == Expando._valueArg:
+			# 				self[name] = value
+			# 				self[name] = value
+			# 			else:
+			# 				print("........")
+			# 				#final .x =
+			# 				self[name] = self._xoT(id=self._id+"/"+name, val=value, parent=self)
+			# 				object.__setattr__(self, name, self._xoT(
+			# 					id=self._id+"/"+name, val=value, parent=self))
+			self._updateSubscribers_(val)
+		# print(self)
 
 	def __xgetstate__(self):
-		pass #print ("I'm being pickled")
+		pass #printX ("I'm being pickled")
 		pass #print(self.__dict__)
 		pass #print()
 		return False
 
 	def __xsetstate__(self, d):
-		pass #pprint ("I'm being unpickled with these values:", d)
+		pass #pprintX ("I'm being unpickled with these values:", d)
 		self.__dict__ = d
 		#### self[Expando._valueArg] *= 3
 	
@@ -435,68 +444,19 @@ class Expando(OrderedDict):
 			# 		yield res.__iter__()
 			# 	yield (a, res)
 				
-	# def __iter__(self):
-	# 	return iter(self.__dict__)
-	# 	# print("ITTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
-	# 	# return self.kids()
-
-	def __xstr__(self):
-		# print(f"!!!!!!! {self._name}")
-		if self[Expando._valueArg] is not None:
-			if "formula" in self and True:  # TODO: check valid formula
-				# print("iiiiiiiiiiiiiiiiiiiiiiiiiiistr",self._lastLoaded,self._lastUpdated)
-				if self._lastLoaded == self._lastUpdated:
-					return str(self[Expando._valueArg])
-				return str(self._runFormula())
-			return str(self[Expando._valueArg])
-		# [:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
-		return "{xobject "+str({str(self._id.replace("/", ".")): str(self[Expando._valueArg])}
-						 )[1:-1]+f" ::: children({len(self.children())})"
-		# return "{xobject "+str({str(self._name):self[Expando._valueArg][0]})[1:]#[:-1]+f" Children({len(self.children())}) ::: {self.children()} "+"}"
-		# return str({"_val":self[Expando._valueArg]})
-		# return str(self[Expando._valueArg])
-		# return str(self.__get__())
-
-	def __xrepr__(self):
-		justShow = True
-		if justShow:
-			self.show(ret=False)
-			print()
-		# print("where are we ?")
-		recursiveDict = False
-		if self[Expando._valueArg] is not None:
-			# self._setValue([[]])
-			if "function" in str(type(self[Expando._valueArg])):
-				print("iiiiiiiiiii",self._id)
-				return str(self[Expando._valueArg]())
-			if "formula" in self and True:  # TODO:`` check valid formula
-				# print("iiiiiiiiiiiiiiiiiiiiiiiiiiiRRRRRR")
-				if self._lastLoaded == self._lastUpdated:
-					return str(self[Expando._valueArg])
-				return str(self._runFormula())
-		# ret = "{xobject "+str({str(self._name):self[Expando._valueArg][0]})[1:-1]+f" ::: children({len(self.children())})"
-		ret = "{xobject "+str({str(self._id.replace("/",".")): str(self[Expando._valueArg])}
-							  )[1:-1]+f" ::: children({len(self.children())})"
-		childs = []
-		if self.children() is not None and len(self.children()) > 0:
-			if recursiveDict:  # TODO DICT XXX
-				ret += f" ::: {self.children()}"
-			else:
-				for c in self.children():
-					# print("CCCCC",c)
-					childs.append(c)
-				ret += ":"+str(childs)
-		ret += "}"
-		return ret
-
-	def __name__(self):
-		return str(self.__id.replace("/","."))
+	def __iter__(self):
+		for k in self.keys():
+			if not k.startswith("_") and k not in Expando._hiddenAttr:
+				yield k
+					# print(f"ITER :{k}:")
+		# return iter(self.__dict__)
+		# print("ITTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
+		# return self.kids()
 
 	def _getRoot(self):
-		return self if self._isRoot else self._parent._getRoot()
-	# def _getRoot(self):
-	# 	return self if "None" in str(type(self._parent)) else self._parent._getRoot()
-
+		if self._parent is not None:
+			return self._parent._getRoot()
+		return self
 
 	def _GetXO(self, get="", allow_creation=False, getValue=False, follow=None):
 		# print("GGGGGGGGGGGGGGGGGetXO", self._id, get, getValue)
@@ -510,13 +470,13 @@ class Expando(OrderedDict):
 		# print("FFFFFFFFFFFFFFF")
 		# print("FFFFFFFFFFFFFFF")
 		# print("FFFFFFFFFFFFFFF",self._id)
-		print(final, final._id)
+		# print(final, final._id)
 		for child in get.split("."):
 			# print("tttccccchild, final",child, final._id)
 			if child not in final:
 				# final[child]
-				final[child] = Expando(_id=final._id+"/"+child,
-                          _parent=final, _behaviors=final._behaviors)
+				final[child] = self._xoT_(_id=final._id+"/"+child,
+						  _parent=final, _behaviors=final._behaviors)
 			# else:
 			final = final[child]
 		# print(final,final._id)
@@ -525,51 +485,6 @@ class Expando(OrderedDict):
 		# print("FFFFFFFFFFFFFFF")
 		return final
 
-	def GetXOx(self, get="", allow_creation=False, getValue=False, follow=None):
-		# print("GGGGGGGGGGGGGGGGG", get, getValue)
-		if "None" not in str(type(self._parent)):
-			get = ".".join(self._id.replace("/",".").split(".")[1:] + get.split("."))
-			def root(xobject):
-				return xobject if "None" in str(type(xobject._parent)) else root(xobject._parent)
-
-			return root(self)._GetXO(get, allow_creation, getValue, follow)
-		# get = ".".join(".".join(self._id.replace("/",".").split(".")[1:] + get.split(".")).split(".")[1:])
-		# print("XXXXXXXXXXXXXXXXXXXX",get, self._id, self,)
-		if "str" not in str(type(get)):
-			print(self._id, "Please provide a string as a key", get)
-			return None
-		c = 0
-		# print(c,c,c,c,c,c,c,c,c,c);c+=1
-		sp = get.split(".")
-		first = get.split(".")[0]
-		if follow is None:
-			if len(first) > 0:
-				if allow_creation or True:
-					# print("FIRST",first)
-					return self._GetXO(get=".".join(sp[1:]), allow_creation=allow_creation, follow=xo[first], getValue=getValue)
-			return None
-
-		# print(c,c,c,c,c,c,c,c,c,c);c+=1
-		if get == "":
-			# print(c,c,c,c,c,c,c,c,c,c);c+=10
-			if follow is not None and follow[Expando._valueArg] is not None:
-				# print(c,c,c,c,c,c,c,c,c,c);c+=100
-				if "list" in str(type(follow[Expando._valueArg])):
-					if len(follow[Expando._valueArg]) > 0:
-						if getValue:
-							return follow[Expando._valueArg][0]
-						return follow
-				if getValue:
-					return follow[Expando._valueArg]
-				return follow
-
-			# print(c,c,c,c,c,c,c,c,c,c);c+=1000
-			return follow
-		else:
-			if allow_creation or first in follow.children():
-				return self._GetXO(get=".".join(sp[1:]), allow_creation=allow_creation, follow=follow[first], getValue=getValue)
-
-		return None
 
 	def _updateSubscribers_(self, *v, **kw):
 		# for trigger in self._triggers:
@@ -606,7 +521,7 @@ class Expando(OrderedDict):
 			# elif "Expando" in str(type(funcOrXo)):
 			# 	self._subscribers.append(funcOrXo)
 			# 	pass
-		return self
+		# return self
 		
 	def __delattr__(self, __name: str) -> None:
 		return super().__delattr__(__name)
@@ -626,7 +541,7 @@ class Expando(OrderedDict):
 
 	def __rmatmul__(self, other):
 		print("@@@@@@@@@@@@@@@@@@@@@@@@@@")
-		print("@@@@@@@@  imatmul  @@@@@@@")
+		print("@@@@@@@@  rmatmul  @@@@@@@")
 		print("@@@@@@@@           @@@@@@@")
 		print("@@@@@@@@           @@@@@@@")
 		print("@@@@@@@@           @@@@@@@",type(other))
@@ -641,19 +556,20 @@ class Expando(OrderedDict):
 
 	# xo.trigger @= lambda Subscribe to changes
 	def __imatmul__(self, other):
+		print("@= @@@@@@@@@@@@",other)
 		if "tuple" in str(type(other)):
 			res = None
 			for func in other:
 				res = self.subscribe(func)
-			return res
-		return self.subscribe(other)
+			# return res
+		self.subscribe(other)
 
 	# def _lastUpdatedNow(self):
 	# 	self._lastUpdated = time.time()
 	def _runFormula(self):
 		if True or "formula" in self:
 			if self._lastUpdated == self._lastLoaded:
-				return self[Expando._valueArg]
+				return self[Expando._valueArg] 
 				# return self.formula.currentValue
 			else:
 				# formula = self.formula[Expando._valueArg]
@@ -751,7 +667,8 @@ class Expando(OrderedDict):
 	def __rshift__(self, other):
 		return self >> other
 
-	def __bool__(self, other):
+	def __bool__(self):#, other == None):
+		# print("__bool__ ",self._id)
 		return bool(self[Expando._valueArg])
 
 	# def __abs__(self, other):
@@ -801,8 +718,8 @@ class Expando(OrderedDict):
 
 
 	def __iadd__(self, other):
-		self[Expando._valueArg] += other
-		return self
+		self[Expando._valueArg] = self[Expando._valueArg] + other
+		return self[Expando._valueArg]
 		
 	def __add__(self, other):
 		if self[Expando._valueArg] is None:
@@ -967,29 +884,31 @@ class Expando(OrderedDict):
 		#### print("################################################################################################################",str(type(o)))
 		#### time.sleep(100)
 		pass #print("@@@@@@@@@@@@@@@@@@@@@@asdasdasd")
-		return "Expando" in str(type(o))
+		return isinstance(o,Expando)#"Expando" in str(type(o))
+		# return "Expando" in str(type(o))
 
 
 	def _inThread(self, data):
 		target, vars, kwargs = data
-		print(" ::: Running Async Thread ::: ",target.__name__,"::: with params:\n :::",vars,str(kwargs).replace("'","").replace("}","").replace(":","=").replace("{",""))
-		print()
+		# print(" ::: Running Async Thread ::: ",target.__name__,"::: with params:\n :::",vars,str(kwargs).replace("'","").replace("}","").replace(":","=").replace("{",""))
+		# print()
 		return target(*vars,**kwargs)
 
-	def _startThread(self, target, vars, kwargs, ):
+	def _startThread(self, target, *vars, **kwargs, ):
 		sT = Thread(target = self._inThread, args = [[target, vars, kwargs]])
 		sT.start()
 
 	def __call__(self, *args, **kwargs):
 		# print(Expando.__call__ in self._behaviors)
 		# print("CCCCCCCCCCCCC",self,args,kwargs, self._behaviors)
+		# behave = False
+		# if behave:
+		# 	if "_skip_overload" not in kwargs or kwargs["_skip_overload"] == False:
+		# 		return self._behaviors[Expando.__call__](*args, **kwargs) \
+		# 			if Expando.__call__ in self._behaviors \
+		# 				else self.__call__(_skip_overload = True,*args, **kwargs);
 
-		if "_skip_overload" not in kwargs or kwargs["_skip_overload"] == False:
-			return self._behaviors[Expando.__call__](self, *args, **kwargs) \
-				if Expando.__call__ in self._behaviors \
-					else self.__call__(_skip_overload = True,*args, **kwargs);
-
-		kwargs.pop("_skip_overload") if "_skip_overload" in kwargs else 0
+		# kwargs.pop("_skip_overload") if "_skip_overload" in kwargs else 0
 		# for a in vars:
 		# 	print(type(a),"AAAAAAAAAAAAAAA,", a)
 		# for a in kwargs:
@@ -1051,48 +970,73 @@ class Expando(OrderedDict):
 		# if "function" in str(type(self[Expando._valueArg])) or "method" in str(type(self[Expando._valueArg])):
 		# print()
 
-		if "value" in self and "function" in str(type(self[Expando._valueArg])):
+		if "value" in self and "function" in str(type(self[self._valueArg])):
+			''' if function is saved in self.value'''
 			# print("!!!!!!!!!!#####",str(type(self[Expando._valueArg])))
 			return self[Expando._valueArg](*args, **kwargs)
 		# print(self[Expando._valueArg]) if Expando._valueArg in self else print()
 		if "formula" in self and True:  # TODO: check valid formula
+			''' if self has formula'''
 			# print("ccccccccccccccccccccccccall",self._lastLoaded, self._lastUpdated)
 			if self._lastLoaded == self._lastUpdated:
 				# print("@@@@@@@")
-				return self[Expando._valueArg]
+				# return self.getHook()
+				return self[self._valueArg]
 			# print("+++++++",self._id)
 			return self._runFormula()
-		elif "value" in self and self[Expando._valueArg] is not None and len(self[Expando._valueArg]) > 0 and "function" in str(type(self[Expando._valueArg])):
-			# print("!!!!!!!!!![0]")
-			if "asyn" in kwargs and kwargs["asyn"] == True:
-				xkwargs = {}
-				for a in kwargs:
-					if (a != "asyn" or "asyn" in self._id) and "retxo" not in a.lower():
-						xkwargs[a] = kwargs[a]
-					elif "retxo" in a.lower():
-						retXO = True
-				if not retXO:
-					return self._startThread(self[Expando._valueArg], args, xkwargs)
-				else:
-					self._startThread(self[Expando._valueArg], args, xkwargs)
-					return self
-			if not retXO:
-				return self[Expando._valueArg](*args, **kwargs)
-			else:
-				self[Expando._valueArg](*args, **kwargs)
-				return self
+			
+		# elif self._valueArg in self and self[self._valueArg] is not None and "function" in str(type(self[Expando._valueArg])):
+		# 	''' if self has formula'''
+		# 	# print("!!!!!!!!!![0]")
+		# 	if "asyn" in kwargs and kwargs["asyn"] == True:
+		# 		xkwargs = {}
+		# 		for a in kwargs:
+		# 			if (a != "asyn" or "asyn" in self._id) and "retxo" not in a.lower():
+		# 				xkwargs[a] = kwargs[a]
+		# 			elif "retxo" in a.lower():
+		# 				retXO = True
+		# 		if not retXO:
+		# 			return self._startThread(self[Expando._valueArg], args, xkwargs)
+		# 		else:
+		# 			self._startThread(self[Expando._valueArg], args, xkwargs)
+		# 			return self
+		# 	if not retXO:
+		# 		return self[Expando._valueArg](*args, **kwargs)
+		# 	else:
+		# 		self[Expando._valueArg](*args, **kwargs)
+		# 		return self
 
 		# print(" XXX CCC",self._id, self[Expando._valueArg])
-		if not retXO:
-			if "value" in self and self[Expando._valueArg] is not None and ("ref" not in kwargs or kwargs["ref"] is not True):
-				if "list" in str(type(self[Expando._valueArg])) and len(self[Expando._valueArg]) == 1:
-					return self[Expando._valueArg]
-			# print(self._id, ":::x:::", args, ":::", kwargs)
-			if "value" in self:
-				return self[Expando._valueArg]
-			# return self[Expando._valueArg][0](*vars, **kwargs)
-		elif "value" in self:
-			return self[Expando._valueArg] if "value" in self else None
+		# if not retXO:
+		# 	if "value" in self and self[Expando._valueArg] is not None and ("ref" not in kwargs or kwargs["ref"] is not True):
+		# 		if isinstance(self[Expando._valueArg],list) and len(self[Expando._valueArg]) == 1:
+		# 			return self[Expando._valueArg]
+		# 	# print(self._id, ":::x:::", args, ":::", kwargs)
+		# 	if "value" in self:
+		# 		return self[Expando._valueArg]
+		# 	# return self[Expando._valueArg][0](*vars, **kwargs)
+		# elif "value" in self: # this is not ever running
+		# 	return self[Expando._valueArg] if "value" in self else None
+		if len(args) > 0 or len(kwargs) > 0:
+			# SET CALL
+			if len(kwargs) > 0:
+				for key in kwargs:
+					self[key] = kwargs[key]
+			if len(args) == 1:
+				# self[self._valueArg] = args[0]
+				self._setValue(args[0])
+				return args[0]
+
+			else:				
+				# self[self._valueArg] = args
+				self._setValue(args)
+				return args
+		else:
+			if self._valueArg not in self:
+				self[self._valueArg] = None
+
+			return self.getHook()
+			return self[self._valueArg]
 			# self[Expando._valueArg][0](*vars, **kwargs)
 			# return self
 		# print(":::::::::::::::::::::::", self.keys(), len(self.keys()))
@@ -1107,17 +1051,17 @@ class Expando(OrderedDict):
 		if (len(self.keys()) == 0):
 			ddd = None
 			if Expando._valueArg in kwargs:
-				ddd = Expando.__init__(self, _id=self._id, _parent = self._parent, **newData)
+				ddd = self._xoT_.__init__(self, _id=self._id, _parent = self._parent, **newData)
 			else:
 				# print(kwargs,args)
 				# ddd = Expando.__init__(self,val = self.value if "value" in self else None, 
-                #                     id=self._id, parent=self._parent, **newData)
+				#                     id=self._id, parent=self._parent, **newData)
 				# print("@@@@@@")
 				# print(newData)
 				# print("@@@@@@@@")
 				# print(".............",self._id, newData["_id"] if "_id" in newData else "")
-				ddd = Expando.__init__(self,_id=self._id,_val = self.value if "value" in self else None, 
-                                   _parent=self._parent, **newData)
+				ddd = self._xoT_.__init__(self,_id=self._id,_val = self[self._valueArg] if "value" in self else None, 
+								   _parent=self._parent, **newData)
 			# ddd =  dict.__init__(self, *vars,**kwargs)
 			# print("tttttttx", ddd, type(ddd))
 			# self._convertAll()
@@ -1158,37 +1102,43 @@ class Expando(OrderedDict):
 		
 		for key in newData:
 			# if isinstance(newData[key],dict):
-			if "dict" in str(type(newData[key])) or "Expando" in str(type(newData[key])):
+			if "dict" in str(type(newData[key])) or isinstance(newData[key],Expando):#"Expando" in str(type(newData[key])):
 				# print("DDDDDDDD",key)
 				val = None
 				# if 
 				if "value" in newData[key]:
 					val = newData[key].pop("value")
 				#EX3
-				self[key] = Expando(_id=self._id+"/"+key, _val=val,
-				                    _parent=self, _behaviors=self._behaviors, ** newData[key])
+				self[key] = self._xoT_(_id=self._id+"/"+key, _val=val,
+									_parent=self, _behaviors=self._behaviors, ** newData[key])
 			else:
 				# print("DDDDDDDD",key)
 				# print("NNNNNNDDDDDDDD",key,type(self))
 				val = newData[key]
 				# self[key] = val
-				# self[key] = Expando(_id=self._id+"/"+key, _val=val, _parent=self)
+				# self[key] = self._xoT(_id=self._id+"/"+key, _val=val, _parent=self)
 				if key in self:
 					# print("AAAAAAAA")
-					if "Expando" in str(type(self[key])):
+					if isinstance(self[key], Expando): # "Expando" in str(type(self[key])):
 						self[key].value = val
 						# self[key] = val
 					else:	
 						# print("BBBBBBBB",self[key],val)
 						#EX4
-						self[key] = Expando(_id=self._id+"/"+key, _val=val, _parent=self, _behaviors=self._behaviors)
+						if key not in Expando._hiddenAttr and not key.startswith("_"):
+							self[key] = self._xoT_(_id=self._id+"/"+key, _val=val, _parent=self, _behaviors=self._behaviors)
+						else:
+							self[key] = val
 						# self[key] = val
 					# print("fffffffffaaa")
 					# @self[key].setter
 					# check hooks updates
 				else:
 					#EX5
-					self[key] = Expando(_id=self._id+"/"+key, _val=val, _parent=self, _behaviors=self._behaviors)
+					if key not in Expando._hiddenAttr and not key.startswith("_"):
+						self[key] = self._xoT_(_id=self._id+"/"+key, _val=val, _parent=self, _behaviors=self._behaviors)
+					else:
+						self[key] = val
 					# print("fffffffff",type(self[key]))
 		########## self.update(newData)
 
@@ -1226,9 +1176,9 @@ class Expando(OrderedDict):
 		for a in self:
 			# print("33333", a, type(self[a]))
 			# if "_" not in a:
-			print("st2", s)
+			# print("st2", s)
 			if not a.startswith("_"):
-				if "Expando" in str(type(self[a])) or "dict" in str(type(self[a])):
+				if isinstance(self[a],Expando) or "dict" in str(type(self[a])):
 					# print("33334",a)
 					if ret:
 						# print("33335555",a)
@@ -1251,27 +1201,6 @@ class Expando(OrderedDict):
 		# print("777777",ret,count,retList,res,)
 		# return dict(self)
 
-	def show0(self,t = "    ",count = 0, inLoop = False):
-		#### print("ssssssssssssssss..............")
-		s = ""
-		#### print("///////////",self[Expando._valueArg],type(self[Expando._valueArg]))
-
-		if "str" in str(type(self[Expando._valueArg])):
-			s = "\'"
-		p = self._id.split("/")[-1] +" = "+ s+str(self[Expando._valueArg])+s
-		tab = ""
-		for i in range(count):
-			tab+=t
-
-		p = tab+p
-		print(p.replace("\t","    "))
-		for a in self.__dict__:
-			# if "_" not in a:
-			if not a.startswith("_"):
-				if "Expando" in str(type(self.__dict__[a])):
-					self.__dict__[a].show(count= count+1)
-		if count == 0 and inLoop:
-			print("\n\nPress Ctrl+C to stop whileShow()\n")
 
 	def showMag(self,t = "    ",count = 0):
 		return self.show(t=t,count = count)
@@ -1307,11 +1236,11 @@ class Expando(OrderedDict):
 		p = tab+p
 		print(p)
 		for a in self.__dict__:
-			if "Expando" in str(type(self.__dict__[a])):
+			if isinstance(self.__dict__[a],Expando):
 				self.__dict__[a].showMag(count= count+1)
 
 
-# class Expando(Expando):
+# class self._xoT(Expando):
 # 	"""docstring for obj."""
 
 # 	def __init__(self, val=None, id=None, parent=None):
@@ -1366,25 +1295,35 @@ class Expando(OrderedDict):
 	# 	if ref:
 	# 		return self[Expando._valueArg]
 	# 	return self[Expando._valueArg]
-
-	def __init__(self, _val=None, _id=None, _parent=None, _behaviors = {},*vars, **entries):
+	
+	def __init__(self, _val=None, _id=None, _parent=None, _behaviors= {}, _xoT_ = None, *vars, **entries):
 		# dict.__init__(self,**entries)
 		# dict.__init__(self, *vars, **entries) #
 		super().__init__(self, *vars, **entries)
+		# Expando.__init__(self, _val=_val, _id=_id, _parent=_parent,
+		#                  _behaviors=_behaviors, _xoT_=xoRedis, *vars, **entries)
 		####expando.py
 		#### def __init__(self):
 		#### es=traceback.extract_stack()
 		# super().__init__(id = id, val = val)
 		if _id is None:
 			_id = Expando._rootName
+		
+		self._id = _id if _id is not None else Expando._rootName
+		self._name = _id.split("/")[-1]
+
+		self._xoT_ = Expando if _xoT_ is None else _xoT_
+		# if _xoT_ is None:
+		# 	self._xoT_ = Expando
+		# else:
+		# 	self._xoT_ = Expando
 		# super().__init__(*(None, val))
 		# super().__init__(val)
 		# super().__init__()
 		pass  # print("PPPPPPPPPPPPPP", id)
 		#### self.name = self.GetName()
 
-		self._id = _id
-		self._name = _id.split("/")[-1]
+		# self._id = _id
 		# self._birth = datetime.now()
 
 		# self.__id = id
@@ -1396,7 +1335,7 @@ class Expando(OrderedDict):
 		self._isRoot = False
 		if _parent is None:
 			self._isRoot = True
-		# self._parent:Expando = Expando(**parent)
+		# self._parent:Expando = self._xoT(**parent)
 		self._parent= _parent
 		#### self.__validID_ = False
 		#### global GD
@@ -1416,9 +1355,13 @@ class Expando(OrderedDict):
 		# self.__id__ = "hidden"
 		# self.__dict__.pop("__id__")
 		# self[Expando._valueArg] = val
+		# self[Expando._valueArg] = val
 		if _val is not None:
-			# self[Expando._valueArg] = val
-			self[Expando._valueArg] = _val
+			# self[Expando._valueArg] = _val # set hook
+			self._setValue(_val)
+			# self[Expando._valueArg] = _val # set hook
+
+		# self[Expando._valueArg] = _val
 		# self.__dict__["val"] = 3
 		# print("obj created! =",self[Expando._valueArg])
 		# self._zzz = 5
@@ -1426,6 +1369,8 @@ class Expando(OrderedDict):
 		#### print("******---",self.get_my_name())
 		#### self["_id"] = self.get_my_name()[0]
 		self.update(entries)
+
+		self._async = self._startThread
 
 		#### self.xxx.yyy.zzz = 13
 		#### updateID = Thread(target = self.makeID, args = [list,])
@@ -1441,6 +1386,21 @@ class Expando(OrderedDict):
 # 		# self._manager = manager
 # 		# self[Expando._valueArg] = manager.bind(self.__id, val, ref=[self])
 
+	# def __setattribute__(self, name, value, *args, **kwargs): # expect _skip_overload to be in kwargs
+	# 	print("@S")
+	# 	return self.__setattr__(name, value, *args, **kwargs)
+
+	# def __getattribute__(self, name, loop=True):
+	# 	print("GGGGGGET ATRI",name)
+	# 	return super().__getattribute__(name)
+	# def __getattribute__(self, name, loop=True, *args, **kwargs):
+	# 	if not name.startswith("_"):
+	# 		 # expect _skip_overload to be in kwargs
+	# 		print("@G")
+	# 		return self.__getattr__(name, loop=loop, *args, **kwargs)
+	# 	else:
+	# 		return object.__getattribute__(name,*args, **kwargs)
+
 	def __setattr__(self, name, value, *args, **kwargs): # expect _skip_overload to be in kwargs
 		# print("sssasasaaaaaaaasaaaaaaaas", self._id, name, value,":::", args,":::", kwargs)
 		# print(str(type(name)))
@@ -1453,16 +1413,21 @@ class Expando(OrderedDict):
 			name = str(name)
 		# print("st3")
 		# if name in self and name not in Expando._hiddenAttr and (not name.startswith("_") or name == Expando._valueArg):
-		if name in self and name not in Expando._hiddenAttr and not name.startswith("_"):
-			if ("_skip_overload" not in kwargs or kwargs["_skip_overload"] == False) and name != "_behaviors":
-				# print("EEEEEEEEEEEEEEEEEEEE1", name, value)
-				return self._behaviors[Expando.__setattr__](self, name, value, *args, **kwargs) \
-					if Expando.__setattr__ in self._behaviors \
-						else self.__setattr__(name, value, _skip_overload=True, *args, **kwargs)
+		behave = False
+		if behave:
+			if name in self and name not in Expando._hiddenAttr and not name.startswith("_"):
+				if ("_skip_overload" not in kwargs or kwargs["_skip_overload"] == False) and name != "_behaviors":
+					# print("EEEEEEEEEEEEEEEEEEEE1", name, value)
+					return self._behaviors[Expando.__setattr__](name, value, *args, **kwargs) \
+						if Expando.__setattr__ in self._behaviors \
+							else self.__setattr__(name, value, _skip_overload=True, *args, **kwargs)
+		# TODO: make _skip_overload not a thing, instead the overload will return (True, value) if it wants to continue the default behavior
 
 		# and "__skip" in self.__dict__ and name not in self.skip:
-		if name not in Expando._hiddenAttr and (not name.startswith("_") or name == Expando._valueArg):
-			if "Expando" not in str(type(value)):
+		if name == self._valueArg:
+			self._setValue(value)
+		elif name not in Expando._hiddenAttr and not name.startswith("_") :
+			if not isinstance(value,Expando):
 				# if type(value) is not Expando:
 				# print(f"____________{name}_________", str(type(value)))
 				if name not in self:
@@ -1470,15 +1435,19 @@ class Expando(OrderedDict):
 					# print("ppp33333",self._id)
 					# self[name] = obj(id = self._id+"/"+name, val= value, parent = __objManager.getXO(self._id))
 					if name == Expando._valueArg:
-						self[name] = value
-						object.__setattr__(self, name, value)
-						self[name] = value
+						# self[name] = value
+						# set hook
+						self._setValue(value)
+						# object.__setattr__(self, name, value)
+						# self[name] = value
 					else:
 						# print("........")
 						#EX6
 						#final .x =
-						res = Expando(_id=self._id+"/"+name, _val=value, _parent=self, _behaviors=self._behaviors)
+						res = self._xoT_(_id=self._id+"/"+name, _val=value, _parent=self, _behaviors=self._behaviors)
+						# set hook
 						self[name] = res
+						# self[name]._setValue(res)
 						object.__setattr__(self, name, res)
 				else:
 					# print("33333333")
@@ -1487,11 +1456,15 @@ class Expando(OrderedDict):
 					# if data binding
 					# manager.save(channel = self._id+"/"+name, data=value)
 					# self[name]._value = value  # ?????
-					self[name][Expando._valueArg] = value  # ?????
+					# set hook fuck
+					self[name]._setValue(value)
+					# self[name][Expando._valueArg] = value  # ?????
 					# self[name+"2"]._val = value  # ?????
-				self[name]._updateSubscribers_(value)
+
+				# disable hook
+				# self[name]._updateSubscribers_(value)
 			else:
-				# print("44444")
+				print("44444")
 				self[name] = value
 				# print("44444")
 				# self[name]._updateSubscribers_(value)
@@ -1500,17 +1473,72 @@ class Expando(OrderedDict):
 		else:
 			# print("555555555", name)
 			# self.__dict__[name] = value
-			# self[name] = value
-			object.__setattr__(self, name, value)
+			self[name] = value # hook fuck 2
+			# self._setValue(value)
+			# object.__setattr__(self, name, value)
+
 		# time.sleep(.1)
-
-	def __getattr__(self, name, loop=True, *args, **kwargs):
-
+	def __getitem__(self, name):
+		# print("iiiiiiii", name)
+		# if not name.startswith("_") and name not in Expando._hiddenAttr:
+		# 	return self.__getattr__(name)
+		# return super().__getitem__(name)
+		# print("__getitem__", name)
 		if "str" not in str(type(name)):
 			name = str(name)
 		#### return name
-		if name == "value":
-			# self[name] = Expando(id=self._id+"/"+name, parent=self)
+		if name == Expando._valueArg:# name == "value":
+			# self[name] = self._xoT(id=self._id+"/"+name, parent=self)
+			# return self[name]
+			if Expando._valueArg not in self:
+				self[Expando._valueArg] = None
+			
+			### GET HOOK
+			return self.getHook()
+			return super().__getitem__(name)
+			return self[name]
+
+		# print(" ", name, name in self, ":::::::",
+			#   dict(self), ":::::::", self.__dict__)
+
+		# print(name in self.__dict__, name in self)
+		# if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr and name not in self.__dict__:
+		if not name.startswith("_") and name not in Expando._hiddenAttr:
+			pass  # print("OOOOO_ooooooooooooooooooooo",name)####,self.__dict__)
+			# print("aaaaaaaaaaaaaa", name, dict(self))
+			# print("ppp66666",self)
+			# self[name] = obj(id = self._id+"/"+name, parent = self)
+			#EX7
+			
+			if name in self:
+				# atr = object.__getattribute__(self, name)
+				# atr = self[name]
+				atr = super().__getitem__(name)
+
+				# print("bbbbbbbbbbbbbbb", name, atr, type(atr))
+
+				return atr
+			else:
+				self[name] = self._xoT_(_id=self._id+"/"+name, _parent=self,
+								_behaviors=self._behaviors)
+				return super().__getitem__(name)
+				return self[name]
+				
+		# print("!!!!!!!!!!!!!!!", name)
+		return super().__getitem__(name)
+		return self[name]
+
+	def __getattr__(self, name, loop=True, *args, **kwargs):
+		# print("__getattr__", name)
+		if "str" not in str(type(name)):
+			name = str(name)
+		#### return name
+		if name == Expando._valueArg:# name == "value":
+			if Expando._valueArg not in self:
+				self[Expando._valueArg] = None
+			# self[name] = self._xoT(id=self._id+"/"+name, parent=self)
+			# Get Hook
+			return self.getHook()
 			return self[name]
 
 		# print(" ", name, name in self, ":::::::",
@@ -1518,13 +1546,13 @@ class Expando(OrderedDict):
  
 		# print(name in self.__dict__, name in self)
 		# if not name.startswith("_") and "_val" in self.__dict__ and name not in Expando._hiddenAttr and name not in self.__dict__:
-		if not name.startswith("_") and name not in dict(self) and name not in Expando._hiddenAttr:
+		if not name.startswith("_") and name not in self and name not in Expando._hiddenAttr:
 			pass  # print("OOOOO_ooooooooooooooooooooo",name)####,self.__dict__)
 			# print("aaaaaaaaaaaaaa", name, dict(self))
 			# print("ppp66666",self)
 			# self[name] = obj(id = self._id+"/"+name, parent = self)
 			#EX7
-			self[name] = Expando(_id=self._id+"/"+name, _parent=self, _behaviors=self._behaviors)
+			self[name] = self._xoT_(_id=self._id+"/"+name, _parent=self, _behaviors=self._behaviors)
 			return self[name]
 		if name in self:
 			# atr = object.__getattribute__(self, name)
@@ -1537,30 +1565,61 @@ class Expando(OrderedDict):
 		return self[name]
 
 
+	def get(self):
+		return "_NotOverloaded_"
+
+	def getHook(self, item = None, *args, **kwargs):
+		# THIS CAN BE OVERLOADED BY SUBCLASS
+		res = self.get()
+		if res == "_NotOverloaded_":
+			if item is not None:
+				return super().get(item,*args,**kwargs)
+			else:
+				# return self[Expando._valueArg]
+				# print(":iiiiii:", self._id, super().getHook(self._valueArg))
+				return super().get(self._valueArg)
+				# return super().__getitem__(self._valueArg)
+				# return super().__getattribute__(self._valueArg)
+		else:
+			return res
+
+	def set(self,value, *args, **kwargs):
+		
+		return True
+	
+	# def set(self, item, value, *args, **kwargs):
+	# 	if value is not None:
+	# 		return super().set(item,value,*args,**kwargs)
+	# 	value = item
+	# 	return self._setValue(value)
+
 	# def __repr__(self) -> str:
 	# 	return super().__repr__()
 	def __repr__(self, *args, **kwargs):
 		# if (not name.startswith("_") or name == Expando._valueArg) and name not in Expando._hiddenAttr:
-		if ("_skip_overload" not in kwargs or kwargs["_skip_overload"] == False):
-			# print("YYYYYYYYYYYYYYYYYYYYYYYYYESS GETTTTTTTTT repr")
-			return str(self._behaviors[Expando.__repr__](self, *args, **kwargs)) \
-				if Expando.__repr__ in self._behaviors \
-					else self.__repr__(_skip_overload=True, *args, **kwargs)
+		# if ("_skip_overload" not in kwargs or kwargs["_skip_overload"] == False):
+		# 	# print("YYYYYYYYYYYYYYYYYYYYYYYYYESS GETTTTTTTTT repr")
+		# 	return str(self._behaviors[Expando.__repr__](*args, **kwargs)) \
+		# 		if Expando.__repr__ in self._behaviors \
+		# 			else self.__repr__(_skip_overload=True, *args, **kwargs)
 		# TODO and no other attributes
 		# print("!!!!!!!!!!!!!!!", )
 		if Expando._valueArg in self and len(self) == 1:
-			return self[Expando._valueArg].__repr__()
-		return str(dict(self))
+			# return self[Expando._valueArg].__repr__()
+			return str(self[Expando._valueArg])
+		# return str(dict(self))
 		# return str(self.show())
-		# return super().__repr__()
+		return super().__repr__()
 
 	def __str__(self, *args, **kwargs):
 		# print("!!!!!!!!!!!!!!!2",)
-		if ("_skip_overload" not in kwargs or kwargs["_skip_overload"] == False):
-			# print("YYYYYYYYYYYYYYYYYYYYYYYYYESS GETTTTTTTTT str", args, kwargs)
-			return str(self._behaviors[Expando.__str__](self, *args, **kwargs)) \
-				if Expando.__str__ in self._behaviors \
-					else self.__str__(_skip_overload=True, *args, **kwargs)
+		behave = False
+		if behave:
+			if ("_skip_overload" not in kwargs or kwargs["_skip_overload"] == False):
+				# print("YYYYYYYYYYYYYYYYYYYYYYYYYESS GETTTTTTTTT str", args, kwargs)
+				return str(self._behaviors[Expando.__str__](*args, **kwargs)) \
+					if Expando.__str__ in self._behaviors \
+						else self.__str__(_skip_overload=True, *args, **kwargs)
 
 		if Expando._valueArg in self and len(self) == 1:
 			return self[Expando._valueArg].__str__()
@@ -1607,8 +1666,23 @@ class Expando(OrderedDict):
 # 	def __setitem__(self, name, value):
 # 		return super().__setitem__(name=name, value=value)
 
-# 	def __getattribute__(self, name, loop=True):
-# 		return super().__getattribute__(name=name, loop=loop)
+	# def __getattribute__(self, name, loop=True):
+	# 	print("__getattribute__", name)
+	# 	return OrderedDict.__getattribute__(self, name)
+	# 	name = str(name)
+	# 	# return self.__getattribute__(name)
+	# 	if not name.startswith("_") and name not in Expando._hiddenAttr:
+	# 		return self.__getattr__(name=name, loop=loop)
+	# 	# return super().__getattribute__(name)
+	# 	return Expando.__getattr__(self, name, loop=loop)
+	# def __setattribute__(self, name, value, loop=True):
+	# 	print("__SSSetattribute__", name, value)
+	# 	return OrderedDict.__setattr__(self,name, value)
+	# 	# name = str(name)
+	# 	# return self.__getattribute__(name)
+	# 	if not name.startswith("_"):
+	# 		return self.__setattr__(name=name, value=value, loop=loop)
+	# 	return Expando.__setattr__(self,name, value)
 
 # 	def __getattr__(self, name, loop=True):
 # 		return super().__getattr__(name=name, loop=loop)
