@@ -1,0 +1,2 @@
+# cd tsession && npx @open-wa/wa-automate -v --multi-device --socket -p 8085 -k challenge18! --qr-timeout 0 --license-key 6826E910-BC034D2F-97A755C0-AC7A0C86
+cd c18session && npx @open-wa/wa-automate -v --multi-device --socket -p 8085 -k challenge18! --qr-timeout 0 --license-key 6826E910-BC034D2F-97A755C0-AC7A0C86

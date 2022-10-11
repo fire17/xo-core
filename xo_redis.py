@@ -50,10 +50,10 @@ class xoRedis(Expando):
 		elif not rootSubscribe:
 			# print("!!!!!!!!!!!!")
 			# print("!!!!!!!!!!!!")
-			print("!!!!!!!!!!!!")
-			print("!!!!!!!!!!!!")
-			print(self._id)
-			print("!!!!!!!!!!!!")
+			# print("!!!!!!!!!!!!")
+			# print("!!!!!!!!!!!!")
+			# print(self._id)
+			# print("!!!!!!!!!!!!")
 			self._redisSubscribe(key=self._id, handler=self._directBind)
 			# if self._getRoot()._live:
 			# pass
