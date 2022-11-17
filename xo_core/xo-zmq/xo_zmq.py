@@ -55,6 +55,7 @@ class xoServer():
                     # f"ECHO! {msg}".encode()
                     # reply(bytes("ECHO! "+str(msg)))
                     reply(f"ECHO! {msg}".encode())
+                    # MERGE WITH MICROXO
                     # reply(msg)
                 except:
                     traceback.print_exc()

@@ -1,7 +1,7 @@
 from argparse import Namespace
 from dataclasses import dataclass, field, asdict
 from xo.expando import Expando
-
+from xo.zmq import xoServer
 class xodal(Expando):
 	index = {}
 	_auth = None
@@ -14,6 +14,7 @@ class xodal(Expando):
 			# print(self._id, "!!!!!!!", func.__name__, type(func))
 			xodal.index[self._id+"/"+func.__name__] = func
 
+	
 	@staticmethod
 	def _checkAuth(payload):
 		return True
@@ -78,7 +79,7 @@ class xodal(Expando):
 	
 class MicroXO(xodal):
 
-	def __init__(self, funcOrNamespace=None, *args, **kwargs):
+	def __init__(self, funcOrNamespace=None, port=None, *args, **kwargs):
 		# print("########", func, args, kwargs)
 		func = None
 		namespace = None
@@ -90,8 +91,18 @@ class MicroXO(xodal):
 
 		super().__init__(func=func, _id = namespace, *args, **kwargs)
 
+		if namespace is not None:
+			if port is None:
+				#Get port
+				port = 1990
+			# self._reqServer = xoServer(port = int(str(port)+"1")) 
+			self._reqServer = xoServer(port = port) 
+			
 
-		
+	@staticmethod
+	def register(Namespace, port):
+		return MicroXO(funcOrNamespace=Namespace, port = port)
+
 	@staticmethod
 	def getNamespace():
 		return "microxo"
