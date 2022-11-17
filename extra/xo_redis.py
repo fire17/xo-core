@@ -3,17 +3,19 @@ import time
 from xo import Expando
 import redis
 import dill as pk
+
+
 class xoRedis(Expando):
 	_rootName = "Redis"
 
 	# TODO: ADD DOC
 	# TODO: check if db = "0" working instead of 0
 	def __init__(self, _val=None, _id=None, _parent=None, _behaviors={},
-				 _host="0.0.0.0", _port=6379,
-				 _db=0, _namespace=_rootName,
-				#  _live = False,
-				 *args, **kwargs):
-				 
+              _host="0.0.0.0", _port=6379,
+              _db=0, _namespace=_rootName,
+              #  _live = False,
+              *args, **kwargs):
+
 		if _id is None:
 			_id = xoRedis._rootName
 		# TODO: Handle not connecting on load
@@ -26,7 +28,8 @@ class xoRedis(Expando):
 		#                  _behaviors=_behaviors, _xoT_=xoRedis, *args, **kwargs)
 		if _parent is None:
 			self._redis = redis.Redis(host=_host, port=_port, db=_db)
-		super().__init__(_val = _val, _id=_id, _parent = _parent, _behaviors=_behaviors, _xoT_ = xoRedis, *args, **kwargs)
+		super().__init__(_val=_val, _id=_id, _parent=_parent,
+                   _behaviors=_behaviors, _xoT_=xoRedis, *args, **kwargs)
 		self._host = _host
 		self._port = _port
 		self._namespace = _namespace
@@ -36,12 +39,12 @@ class xoRedis(Expando):
 		self._live = False
 
 		if _parent is None:
-			pass # self.disconnected @= self._tryReconnect
+			pass  # self.disconnected @= self._tryReconnect
 
 		# TODO: change _behaviors to simple overloads set,get,call
 		# self._behaviors = {Expando.__call__: self._redisCall,
 		# 			   Expando.__setattr__: self._redisSet}
-		
+
 		rootSubscribe = True
 		rootSubscribe = False
 		# Global subscribe, only subscribe when root
@@ -60,6 +63,7 @@ class xoRedis(Expando):
 		# also
 		# TODO: consider subscribing only to specific id, to get notified for everyone
 		# , _val = None, _id = None, _parent = None, _behaviors = {}
+
 	def rSub(self):
 		self._getRoot()._redisSubscribe(key=self._rootName+"*", handler=self._directBind)
 
@@ -82,14 +86,14 @@ class xoRedis(Expando):
 		#     if item['type'] == 'message':
 		#         print(item['data'])
 		# print("DONE")
-	
+
 	# TODO: Also, implement option to lazy load, (set _needsUpdate or something like so)
 	def _directBind(self, msg, *args, **kwargs):
 		if isinstance(msg, dict) and "type" in msg:
 			if "message" in msg["type"]:
 				# do_something with the message
 				channel = msg["channel"].decode().replace(
-					"/", ".")#.strip("Redis.")  # .split(".")[-1]
+					"/", ".")  # .strip("Redis.")  # .split(".")[-1]
 				if channel.startswith(xoRedis._rootName+"."):
 					channel = ".".join(channel.split(".")[1:])  # .split(".")[-1]
 				# print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@", msg, args, kwargs)
@@ -113,12 +117,11 @@ class xoRedis(Expando):
 					# print("try res:",res)
 				except:
 					print(" - - - COULD NOT UNPICKLE", self._id, ":::", res)
-				
+
 				f._setValue(res, skipInner=True)
 
 				# f[self._valueArg] = res
 				# f._updateSubscribers_(res)
-
 
 				# print("######  ", f.value)
 				# print("######  ", dict(f))
@@ -136,16 +139,16 @@ class xoRedis(Expando):
 	# 	self._pubsub = self._redis.pubsub()
 	# 	# TODO: do we need to resubscribe children ?
 
-	def set(self,value,*args,**kwargs):
+	def set(self, value, *args, **kwargs):
 		if value is not None:
-			val = pk.dumps(value)		
+			val = pk.dumps(value)
 			r = self._getRoot()._redis
 			res = r.set(self._id, val)
 			r.publish(self._id, val)
-			return True # To continue with super() set
+			return True  # To continue with super() set
 		return False
 
-	def get(self,*args,**kwargs):
+	def get(self, *args, **kwargs):
 		r = self._getRoot()._redis
 		res = r.get(self._id)
 		try:
@@ -155,13 +158,12 @@ class xoRedis(Expando):
 		self._setValue(res)
 		return res
 		if value is not None:
-			val = pk.dumps(value)		
+			val = pk.dumps(value)
 			r = self._getRoot()._redis
 			res = r.set(self._id, val)
 			r.publish(self._id, val)
-			return True # To continue with super() set
+			return True  # To continue with super() set
 		return False
-	
 
 	# def _redisSet(self, name, value=None, *args, **kwargs):
 	# 	if not self._binded:
@@ -211,14 +213,13 @@ class xoRedis(Expando):
 	# 		# self[args[0]].value = res
 	# 		# print(" ::: REDIS RESULTS:", res)
 	# 		self[name]._setValue(value)
-			
+
 	# 		# print(f" ::: REDIS SET RESULTS: ({redisID})",
 	# 			# ":::", res, ":::", self, ":::")
 	# 		# self.__setattr__(self,args[0], res, _skip_overload=True)# *args, **kwargs)
 	# 		# *args, **kwargs)
 	# 		self.__setattr__(name, value, _skip_overload=True)  # *args, **kwargs)
 	# 		return value
-
 
 	# def _redisCall(self, *args, **kwargs):
 	# 	# print("YYYYYYYYYYYYEEEEEEEEESSSSSSSSSSSCCC",self._id, args, kwargs)
@@ -257,8 +258,6 @@ class xoRedis(Expando):
 	# 			#   ":::")
 	# 		return self
 
-	
-
 
 Redis = xoRedis
 # print("ooooooooooooo")
@@ -277,6 +276,3 @@ Redis = xoRedis
 # xo.redis.x.y.z = "ZZZZZZZZ2"
 # print(xo.redis.x.y.z.value)
 # print()
-
-
-
