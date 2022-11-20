@@ -1313,14 +1313,20 @@ class Expando(OrderedDict):
 		# dict.__init__(self,**entries)
 		# dict.__init__(self, *vars, **entries) #
 		super().__init__(self, *vars, **entries)
+		if self is not None:
+			_xoT_ = type(self)
 		# Expando.__init__(self, _val=_val, _id=_id, _parent=_parent,
 		#                  _behaviors=_behaviors, _xoT_=xoRedis, *vars, **entries)
 		####expando.py
 		#### def __init__(self):
 		#### es=traceback.extract_stack()
 		# super().__init__(id = id, val = val)
+		
 		if _id is None:
+			print("ddddddddddddd",type(_xoT_))
 			_id = Expando._rootName
+			if _xoT_ is not None:
+				_id = _xoT_._rootName
 
 		self._id = _id if _id is not None else Expando._rootName
 		self._name = _id.split("/")[-1]
